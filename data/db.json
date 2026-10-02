@@ -1,0 +1,1702 @@
+{
+  "classes": [
+    {
+      "id": "c-601",
+      "code": "601",
+      "name": "6ème 1",
+      "level": "6e",
+      "section": "Collège",
+      "active": true,
+      "studentCount": 30,
+      "mainTeacher": "Mme Martin",
+      "room": "B101"
+    },
+    {
+      "id": "c-602",
+      "code": "602",
+      "name": "6ème 2",
+      "level": "6e",
+      "section": "Collège",
+      "active": true,
+      "studentCount": 31,
+      "mainTeacher": "M. Dupont",
+      "room": "B102"
+    },
+    {
+      "id": "c-603",
+      "code": "603",
+      "name": "6ème 3",
+      "level": "6e",
+      "section": "Collège",
+      "active": true,
+      "studentCount": 29,
+      "mainTeacher": "Mme Bernard",
+      "room": "B103"
+    },
+    {
+      "id": "c-604",
+      "code": "604",
+      "name": "6ème 4",
+      "level": "6e",
+      "section": "Collège",
+      "active": true,
+      "studentCount": 30,
+      "mainTeacher": "M. Thomas",
+      "room": "B104"
+    },
+    {
+      "id": "c-605",
+      "code": "605",
+      "name": "6ème 5",
+      "level": "6e",
+      "section": "Collège",
+      "active": true,
+      "studentCount": 32,
+      "mainTeacher": "Mme Petit",
+      "room": "B105"
+    },
+    {
+      "id": "c-606",
+      "code": "606",
+      "name": "6ème 6",
+      "level": "6e",
+      "section": "Collège",
+      "active": true,
+      "studentCount": 28,
+      "mainTeacher": "M. Robert",
+      "room": "B106"
+    },
+    {
+      "id": "c-501",
+      "code": "501",
+      "name": "5ème 1",
+      "level": "5e",
+      "section": "Collège",
+      "active": true,
+      "studentCount": 31,
+      "mainTeacher": "Mme Richard",
+      "room": "B201"
+    },
+    {
+      "id": "c-502",
+      "code": "502",
+      "name": "5ème 2",
+      "level": "5e",
+      "section": "Collège",
+      "active": true,
+      "studentCount": 30,
+      "mainTeacher": "M. Durand",
+      "room": "B202"
+    },
+    {
+      "id": "c-503",
+      "code": "503",
+      "name": "5ème 3",
+      "level": "5e",
+      "section": "Collège",
+      "active": true,
+      "studentCount": 31,
+      "mainTeacher": "Mme Moreau",
+      "room": "B203"
+    },
+    {
+      "id": "c-504",
+      "code": "504",
+      "name": "5ème 4",
+      "level": "5e",
+      "section": "Collège",
+      "active": true,
+      "studentCount": 29,
+      "mainTeacher": "M. Laurent",
+      "room": "B204"
+    },
+    {
+      "id": "c-505",
+      "code": "505",
+      "name": "5ème 5",
+      "level": "5e",
+      "section": "Collège",
+      "active": true,
+      "studentCount": 30,
+      "mainTeacher": "Mme Simon",
+      "room": "B205"
+    },
+    {
+      "id": "c-506",
+      "code": "506",
+      "name": "5ème 6",
+      "level": "5e",
+      "section": "Collège",
+      "active": true,
+      "studentCount": 30,
+      "mainTeacher": "M. Michel",
+      "room": "B206"
+    },
+    {
+      "id": "c-401",
+      "code": "401",
+      "name": "4ème 1",
+      "level": "4e",
+      "section": "Collège",
+      "active": true,
+      "studentCount": 32,
+      "mainTeacher": "Mme Lefebvre",
+      "room": "B301"
+    },
+    {
+      "id": "c-402",
+      "code": "402",
+      "name": "4ème 2",
+      "level": "4e",
+      "section": "Collège",
+      "active": true,
+      "studentCount": 31,
+      "mainTeacher": "M. Leroy",
+      "room": "B302"
+    },
+    {
+      "id": "c-403",
+      "code": "403",
+      "name": "4ème 3",
+      "level": "4e",
+      "section": "Collège",
+      "active": true,
+      "studentCount": 30,
+      "mainTeacher": "Mme Roux",
+      "room": "B303"
+    },
+    {
+      "id": "c-404",
+      "code": "404",
+      "name": "4ème 4",
+      "level": "4e",
+      "section": "Collège",
+      "active": true,
+      "studentCount": 29,
+      "mainTeacher": "M. David",
+      "room": "B304"
+    },
+    {
+      "id": "c-405",
+      "code": "405",
+      "name": "4ème 5",
+      "level": "4e",
+      "section": "Collège",
+      "active": true,
+      "studentCount": 31,
+      "mainTeacher": "Mme Bertrand",
+      "room": "B305"
+    },
+    {
+      "id": "c-406",
+      "code": "406",
+      "name": "4ème 6",
+      "level": "4e",
+      "section": "Collège",
+      "active": true,
+      "studentCount": 30,
+      "mainTeacher": "M. Morel",
+      "room": "B306"
+    },
+    {
+      "id": "c-301",
+      "code": "301",
+      "name": "3ème 1",
+      "level": "3e",
+      "section": "Collège",
+      "active": true,
+      "studentCount": 32,
+      "mainTeacher": "Mme Fournier",
+      "room": "B401"
+    },
+    {
+      "id": "c-302",
+      "code": "302",
+      "name": "3ème 2",
+      "level": "3e",
+      "section": "Collège",
+      "active": true,
+      "studentCount": 33,
+      "mainTeacher": "M. Girard",
+      "room": "B402"
+    },
+    {
+      "id": "c-303",
+      "code": "303",
+      "name": "3ème 3",
+      "level": "3e",
+      "section": "Collège",
+      "active": true,
+      "studentCount": 30,
+      "mainTeacher": "Mme Bonnet",
+      "room": "B403"
+    },
+    {
+      "id": "c-304",
+      "code": "304",
+      "name": "3ème 4",
+      "level": "3e",
+      "section": "Collège",
+      "active": true,
+      "studentCount": 31,
+      "mainTeacher": "M. Vincent",
+      "room": "B404"
+    },
+    {
+      "id": "c-305",
+      "code": "305",
+      "name": "3ème 5",
+      "level": "3e",
+      "section": "Collège",
+      "active": true,
+      "studentCount": 31,
+      "mainTeacher": "Mme Faure",
+      "room": "B405"
+    },
+    {
+      "id": "c-306",
+      "code": "306",
+      "name": "3ème 6",
+      "level": "3e",
+      "section": "Collège",
+      "active": true,
+      "studentCount": 29,
+      "mainTeacher": "M. Andre",
+      "room": "B406"
+    },
+    {
+      "id": "c-201",
+      "code": "201",
+      "name": "2nde 1",
+      "level": "2nde",
+      "section": "Lycée",
+      "active": true,
+      "studentCount": 35,
+      "mainTeacher": "Mme Mercier",
+      "room": "L101"
+    },
+    {
+      "id": "c-202",
+      "code": "202",
+      "name": "2nde 2",
+      "level": "2nde",
+      "section": "Lycée",
+      "active": true,
+      "studentCount": 34,
+      "mainTeacher": "M. Blanc",
+      "room": "L102"
+    },
+    {
+      "id": "c-203",
+      "code": "203",
+      "name": "2nde 3",
+      "level": "2nde",
+      "section": "Lycée",
+      "active": true,
+      "studentCount": 35,
+      "mainTeacher": "Mme Guerin",
+      "room": "L103"
+    },
+    {
+      "id": "c-204",
+      "code": "204",
+      "name": "2nde 4",
+      "level": "2nde",
+      "section": "Lycée",
+      "active": true,
+      "studentCount": 34,
+      "mainTeacher": "M. Boyer",
+      "room": "L104"
+    },
+    {
+      "id": "c-205",
+      "code": "205",
+      "name": "2nde 5",
+      "level": "2nde",
+      "section": "Lycée",
+      "active": true,
+      "studentCount": 35,
+      "mainTeacher": "Mme Garnier",
+      "room": "L105"
+    },
+    {
+      "id": "c-101",
+      "code": "101",
+      "name": "1ère 1",
+      "level": "1ère",
+      "section": "Lycée",
+      "active": true,
+      "studentCount": 34,
+      "mainTeacher": "M. Chevalier",
+      "room": "L201"
+    },
+    {
+      "id": "c-102",
+      "code": "102",
+      "name": "1ère 2",
+      "level": "1ère",
+      "section": "Lycée",
+      "active": true,
+      "studentCount": 35,
+      "mainTeacher": "Mme Francois",
+      "room": "L202"
+    },
+    {
+      "id": "c-103",
+      "code": "103",
+      "name": "1ère 3",
+      "level": "1ère",
+      "section": "Lycée",
+      "active": true,
+      "studentCount": 34,
+      "mainTeacher": "M. Legrand",
+      "room": "L203"
+    },
+    {
+      "id": "c-104",
+      "code": "104",
+      "name": "1ère 4",
+      "level": "1ère",
+      "section": "Lycée",
+      "active": true,
+      "studentCount": 33,
+      "mainTeacher": "Mme Gauthier",
+      "room": "L204"
+    },
+    {
+      "id": "c-T01",
+      "code": "T01",
+      "name": "Tle 1",
+      "level": "Terminale",
+      "section": "Lycée",
+      "active": true,
+      "studentCount": 34,
+      "mainTeacher": "M. Garcia",
+      "room": "L301"
+    },
+    {
+      "id": "c-T02",
+      "code": "T02",
+      "name": "Tle 2",
+      "level": "Terminale",
+      "section": "Lycée",
+      "active": true,
+      "studentCount": 35,
+      "mainTeacher": "Mme Perrin",
+      "room": "L302"
+    },
+    {
+      "id": "c-T03",
+      "code": "T03",
+      "name": "Tle 3",
+      "level": "Terminale",
+      "section": "Lycée",
+      "active": true,
+      "studentCount": 33,
+      "mainTeacher": "M. Robin",
+      "room": "L303"
+    },
+    {
+      "id": "c-T04",
+      "code": "T04",
+      "name": "Tle 4",
+      "level": "Terminale",
+      "section": "Lycée",
+      "active": true,
+      "studentCount": 34,
+      "mainTeacher": "Mme Clement",
+      "room": "L304"
+    }
+  ],
+  "subjects": [
+    {
+      "id": "s-fran",
+      "code": "FRAN",
+      "name": "Français",
+      "shortName": "Français",
+      "levels": [
+        "6e",
+        "5e",
+        "4e",
+        "3e",
+        "2nde",
+        "1ère"
+      ],
+      "section": "Tous",
+      "type": "Tronc commun",
+      "active": true,
+      "priority": 1
+    },
+    {
+      "id": "s-philo",
+      "code": "PHILO",
+      "name": "Philosophie",
+      "shortName": "Philosophie",
+      "levels": [
+        "Terminale"
+      ],
+      "section": "Lycée",
+      "type": "Tronc commun",
+      "active": true,
+      "priority": 1
+    },
+    {
+      "id": "s-math",
+      "code": "MATH",
+      "name": "Mathématiques",
+      "shortName": "Mathématiques",
+      "levels": [
+        "6e",
+        "5e",
+        "4e",
+        "3e",
+        "2nde"
+      ],
+      "section": "Tous",
+      "type": "Tronc commun",
+      "active": true,
+      "priority": 2
+    },
+    {
+      "id": "s-hg",
+      "code": "HG",
+      "name": "Histoire-Géographie",
+      "shortName": "Histoire-Géo",
+      "levels": [
+        "6e",
+        "5e",
+        "4e",
+        "3e",
+        "2nde",
+        "1ère",
+        "Terminale"
+      ],
+      "section": "Tous",
+      "type": "Tronc commun",
+      "active": true,
+      "priority": 3
+    },
+    {
+      "id": "s-emc",
+      "code": "EMC",
+      "name": "Enseignement Moral et Civique",
+      "shortName": "EMC",
+      "levels": [
+        "6e",
+        "5e",
+        "4e",
+        "3e",
+        "2nde",
+        "1ère",
+        "Terminale"
+      ],
+      "section": "Tous",
+      "type": "Tronc commun",
+      "active": true,
+      "priority": 4
+    },
+    {
+      "id": "s-ang",
+      "code": "ANG",
+      "name": "Anglais (LV1)",
+      "shortName": "Anglais",
+      "levels": [
+        "6e",
+        "5e",
+        "4e",
+        "3e",
+        "2nde",
+        "1ère",
+        "Terminale"
+      ],
+      "section": "Tous",
+      "type": "Tronc commun",
+      "active": true,
+      "priority": 5
+    },
+    {
+      "id": "s-esp",
+      "code": "ESP",
+      "name": "Espagnol (LV2)",
+      "shortName": "Espagnol",
+      "levels": [
+        "5e",
+        "4e",
+        "3e",
+        "2nde",
+        "1ère",
+        "Terminale"
+      ],
+      "section": "Tous",
+      "type": "LV2",
+      "active": true,
+      "priority": 6
+    },
+    {
+      "id": "s-all",
+      "code": "ALL",
+      "name": "Allemand (LV2)",
+      "shortName": "Allemand",
+      "levels": [
+        "5e",
+        "4e",
+        "3e",
+        "2nde",
+        "1ère",
+        "Terminale"
+      ],
+      "section": "Tous",
+      "type": "LV2",
+      "active": true,
+      "priority": 7
+    },
+    {
+      "id": "s-svt",
+      "code": "SVT",
+      "name": "Sciences de la Vie et de la Terre",
+      "shortName": "SVT",
+      "levels": [
+        "6e",
+        "5e",
+        "4e",
+        "3e",
+        "2nde"
+      ],
+      "section": "Tous",
+      "type": "Tronc commun",
+      "active": true,
+      "priority": 8
+    },
+    {
+      "id": "s-pc",
+      "code": "PC",
+      "name": "Physique-Chimie",
+      "shortName": "Physique-Chimie",
+      "levels": [
+        "6e",
+        "5e",
+        "4e",
+        "3e",
+        "2nde"
+      ],
+      "section": "Tous",
+      "type": "Tronc commun",
+      "active": true,
+      "priority": 9
+    },
+    {
+      "id": "s-tech",
+      "code": "TECH",
+      "name": "Technologie",
+      "shortName": "Technologie",
+      "levels": [
+        "6e",
+        "5e",
+        "4e",
+        "3e"
+      ],
+      "section": "Collège",
+      "type": "Tronc commun",
+      "active": true,
+      "priority": 10
+    },
+    {
+      "id": "s-eps",
+      "code": "EPS",
+      "name": "Éducation Physique et Sportive",
+      "shortName": "EPS",
+      "levels": [
+        "6e",
+        "5e",
+        "4e",
+        "3e",
+        "2nde",
+        "1ère",
+        "Terminale"
+      ],
+      "section": "Tous",
+      "type": "Tronc commun",
+      "active": true,
+      "priority": 11
+    },
+    {
+      "id": "s-art",
+      "code": "ART",
+      "name": "Arts Plastiques",
+      "shortName": "Arts Plastiques",
+      "levels": [
+        "6e",
+        "5e",
+        "4e",
+        "3e"
+      ],
+      "section": "Collège",
+      "type": "Tronc commun",
+      "active": true,
+      "priority": 12
+    },
+    {
+      "id": "s-mus",
+      "code": "MUS",
+      "name": "Éducation Musicale",
+      "shortName": "Éducation Musicale",
+      "levels": [
+        "6e",
+        "5e",
+        "4e",
+        "3e"
+      ],
+      "section": "Collège",
+      "type": "Tronc commun",
+      "active": true,
+      "priority": 13
+    },
+    {
+      "id": "s-ses",
+      "code": "SES",
+      "name": "Sciences Économiques et Sociales",
+      "shortName": "SES",
+      "levels": [
+        "2nde"
+      ],
+      "section": "Lycée",
+      "type": "Tronc commun",
+      "active": true,
+      "priority": 14
+    },
+    {
+      "id": "s-snt",
+      "code": "SNT",
+      "name": "Sciences Numériques et Technologie",
+      "shortName": "SNT",
+      "levels": [
+        "2nde"
+      ],
+      "section": "Lycée",
+      "type": "Tronc commun",
+      "active": true,
+      "priority": 15
+    },
+    {
+      "id": "s-enssc",
+      "code": "ENSSC",
+      "name": "Enseignement Scientifique",
+      "shortName": "Ens. Scientifique",
+      "levels": [
+        "1ère",
+        "Terminale"
+      ],
+      "section": "Lycée",
+      "type": "Tronc commun",
+      "active": true,
+      "priority": 16
+    },
+    {
+      "id": "s-spe-math",
+      "code": "SPE-MATH",
+      "name": "Spécialité Mathématiques",
+      "shortName": "Mathématiques",
+      "levels": [
+        "1ère",
+        "Terminale"
+      ],
+      "section": "Lycée",
+      "type": "Spécialité",
+      "active": true,
+      "priority": 20
+    },
+    {
+      "id": "s-spe-pc",
+      "code": "SPE-PC",
+      "name": "Spécialité Physique-Chimie",
+      "shortName": "Physique-Chimie",
+      "levels": [
+        "1ère",
+        "Terminale"
+      ],
+      "section": "Lycée",
+      "type": "Spécialité",
+      "active": true,
+      "priority": 21
+    },
+    {
+      "id": "s-spe-svt",
+      "code": "SPE-SVT",
+      "name": "Spécialité SVT",
+      "shortName": "SVT",
+      "levels": [
+        "1ère",
+        "Terminale"
+      ],
+      "section": "Lycée",
+      "type": "Spécialité",
+      "active": true,
+      "priority": 22
+    },
+    {
+      "id": "s-spe-ses",
+      "code": "SPE-SES",
+      "name": "Spécialité SES",
+      "shortName": "SES",
+      "levels": [
+        "1ère",
+        "Terminale"
+      ],
+      "section": "Lycée",
+      "type": "Spécialité",
+      "active": true,
+      "priority": 23
+    },
+    {
+      "id": "s-spe-hggsp",
+      "code": "SPE-HGGSP",
+      "name": "Spécialité HGGSP (Histoire-Géo Géopolitique Sciences Po)",
+      "shortName": "HGGSP",
+      "levels": [
+        "1ère",
+        "Terminale"
+      ],
+      "section": "Lycée",
+      "type": "Spécialité",
+      "active": true,
+      "priority": 24
+    },
+    {
+      "id": "s-spe-hlp",
+      "code": "SPE-HLP",
+      "name": "Spécialité HLP (Humanités Littérature Philosophie)",
+      "shortName": "HLP",
+      "levels": [
+        "1ère",
+        "Terminale"
+      ],
+      "section": "Lycée",
+      "type": "Spécialité",
+      "active": true,
+      "priority": 25
+    },
+    {
+      "id": "s-spe-nsi",
+      "code": "SPE-NSI",
+      "name": "Spécialité NSI (Numérique et Sciences Informatiques)",
+      "shortName": "NSI",
+      "levels": [
+        "1ère",
+        "Terminale"
+      ],
+      "section": "Lycée",
+      "type": "Spécialité",
+      "active": true,
+      "priority": 26
+    },
+    {
+      "id": "s-spe-llcer",
+      "code": "SPE-LLCER",
+      "name": "Spécialité LLCER Anglais",
+      "shortName": "LLCER",
+      "levels": [
+        "1ère",
+        "Terminale"
+      ],
+      "section": "Lycée",
+      "type": "Spécialité",
+      "active": true,
+      "priority": 27
+    },
+    {
+      "id": "s-opt-latin",
+      "code": "OPT-LATIN",
+      "name": "Option Latin",
+      "shortName": "Latin",
+      "levels": [
+        "5e",
+        "4e",
+        "3e",
+        "2nde",
+        "1ère",
+        "Terminale"
+      ],
+      "section": "Tous",
+      "type": "Option",
+      "active": true,
+      "priority": 30
+    },
+    {
+      "id": "s-opt-grec",
+      "code": "OPT-GREC",
+      "name": "Option Grec Ancien",
+      "shortName": "Grec",
+      "levels": [
+        "3e",
+        "2nde",
+        "1ère",
+        "Terminale"
+      ],
+      "section": "Tous",
+      "type": "Option",
+      "active": true,
+      "priority": 31
+    },
+    {
+      "id": "s-opt-lce",
+      "code": "OPT-LCE",
+      "name": "Langues et Cultures Européennes (LCE)",
+      "shortName": "LCE",
+      "levels": [
+        "4e",
+        "3e"
+      ],
+      "section": "Collège",
+      "type": "Option",
+      "active": true,
+      "priority": 32
+    }
+  ],
+  "users": [
+    {
+      "id": "u-t1",
+      "m365Id": "m365-t-001",
+      "firstName": "Hélène",
+      "lastName": "DUPONT",
+      "email": "helene.dupont@ndmissions.fr",
+      "upn": "helene.dupont@ndmissions.fr",
+      "role": "teacher",
+      "status": "active",
+      "teachingSubjects": [
+        {
+          "classCode": "601",
+          "subjectName": "Français"
+        },
+        {
+          "classCode": "602",
+          "subjectName": "Français"
+        },
+        {
+          "classCode": "603",
+          "subjectName": "Français"
+        },
+        {
+          "classCode": "604",
+          "subjectName": "Français"
+        }
+      ]
+    },
+    {
+      "id": "u-t2",
+      "m365Id": "m365-t-002",
+      "firstName": "Marc",
+      "lastName": "MARTIN",
+      "email": "marc.martin@ndmissions.fr",
+      "upn": "marc.martin@ndmissions.fr",
+      "role": "teacher",
+      "status": "active",
+      "teachingSubjects": [
+        {
+          "classCode": "601",
+          "subjectName": "Mathématiques"
+        },
+        {
+          "classCode": "602",
+          "subjectName": "Mathématiques"
+        }
+      ]
+    },
+    {
+      "id": "u-t3",
+      "m365Id": "m365-t-003",
+      "firstName": "Claire",
+      "lastName": "LEFEBVRE",
+      "email": "claire.lefebvre@ndmissions.fr",
+      "upn": "claire.lefebvre@ndmissions.fr",
+      "role": "teacher",
+      "status": "active",
+      "teachingSubjects": [
+        {
+          "classCode": "101",
+          "subjectName": "HGGSP"
+        },
+        {
+          "classCode": "102",
+          "subjectName": "HGGSP"
+        },
+        {
+          "classCode": "T01",
+          "subjectName": "HGGSP"
+        }
+      ]
+    },
+    {
+      "id": "u-t4",
+      "m365Id": "m365-t-004",
+      "firstName": "Antoine",
+      "lastName": "BERNARD",
+      "email": "antoine.bernard@ndmissions.fr",
+      "upn": "antoine.bernard@ndmissions.fr",
+      "role": "teacher",
+      "status": "active",
+      "teachingSubjects": [
+        {
+          "classCode": "101",
+          "subjectName": "NSI"
+        },
+        {
+          "classCode": "T01",
+          "subjectName": "NSI"
+        }
+      ]
+    },
+    {
+      "id": "u-t5",
+      "m365Id": "m365-t-005",
+      "firstName": "Sophie",
+      "lastName": "ROUX",
+      "email": "sophie.roux@ndmissions.fr",
+      "upn": "sophie.roux@ndmissions.fr",
+      "role": "teacher",
+      "status": "active",
+      "teachingSubjects": [
+        {
+          "classCode": "601",
+          "subjectName": "Anglais"
+        },
+        {
+          "classCode": "602",
+          "subjectName": "Anglais"
+        }
+      ]
+    },
+    {
+      "id": "u-t6",
+      "m365Id": "m365-t-006",
+      "firstName": "Jean-Pierre",
+      "lastName": "MOREL",
+      "email": "jp.morel@ndmissions.fr",
+      "upn": "jp.morel@ndmissions.fr",
+      "role": "teacher",
+      "status": "active",
+      "teachingSubjects": [
+        {
+          "classCode": "601",
+          "subjectName": "Histoire-Géo"
+        },
+        {
+          "classCode": "601",
+          "subjectName": "EMC"
+        }
+      ]
+    },
+    {
+      "id": "u-t7",
+      "m365Id": "m365-t-007",
+      "firstName": "Isabelle",
+      "lastName": "GIRARD",
+      "email": "isabelle.girard@ndmissions.fr",
+      "upn": "isabelle.girard@ndmissions.fr",
+      "role": "teacher",
+      "status": "active",
+      "teachingSubjects": [
+        {
+          "classCode": "601",
+          "subjectName": "SVT"
+        },
+        {
+          "classCode": "602",
+          "subjectName": "SVT"
+        }
+      ]
+    },
+    {
+      "id": "u-t8",
+      "m365Id": "m365-t-008",
+      "firstName": "Philippe",
+      "lastName": "CHEVALIER",
+      "email": "philippe.chevalier@ndmissions.fr",
+      "upn": "philippe.chevalier@ndmissions.fr",
+      "role": "teacher",
+      "status": "active",
+      "teachingSubjects": [
+        {
+          "classCode": "101",
+          "subjectName": "Mathématiques"
+        },
+        {
+          "classCode": "T01",
+          "subjectName": "Mathématiques"
+        }
+      ]
+    },
+    {
+      "id": "u-s1",
+      "m365Id": "m365-s-001",
+      "firstName": "Jean",
+      "lastName": "DUPONT",
+      "email": "jean.dupont@eleves.ndmissions.fr",
+      "upn": "jean.dupont@eleves.ndmissions.fr",
+      "role": "student",
+      "classCode": "601",
+      "options": [
+        "Latin"
+      ],
+      "status": "active"
+    },
+    {
+      "id": "u-s2",
+      "m365Id": "m365-s-002",
+      "firstName": "Paul",
+      "lastName": "MARTIN",
+      "email": "paul.martin@eleves.ndmissions.fr",
+      "upn": "paul.martin@eleves.ndmissions.fr",
+      "role": "student",
+      "classCode": "601",
+      "status": "active"
+    },
+    {
+      "id": "u-s3",
+      "m365Id": "m365-s-003",
+      "firstName": "Camille",
+      "lastName": "LEROY",
+      "email": "camille.leroy@eleves.ndmissions.fr",
+      "upn": "camille.leroy@eleves.ndmissions.fr",
+      "role": "student",
+      "classCode": "601",
+      "options": [
+        "Latin"
+      ],
+      "status": "active"
+    },
+    {
+      "id": "u-s4",
+      "m365Id": "m365-s-004",
+      "firstName": "Lucas",
+      "lastName": "THOMAS",
+      "email": "lucas.thomas@eleves.ndmissions.fr",
+      "upn": "lucas.thomas@eleves.ndmissions.fr",
+      "role": "student",
+      "classCode": "601",
+      "status": "active"
+    },
+    {
+      "id": "u-s5",
+      "m365Id": "m365-s-005",
+      "firstName": "Emma",
+      "lastName": "PETIT",
+      "email": "emma.petit@eleves.ndmissions.fr",
+      "upn": "emma.petit@eleves.ndmissions.fr",
+      "role": "student",
+      "classCode": "601",
+      "status": "active"
+    },
+    {
+      "id": "u-s6",
+      "m365Id": "m365-s-006",
+      "firstName": "Hugo",
+      "lastName": "ROBERT",
+      "email": "hugo.robert@eleves.ndmissions.fr",
+      "upn": "hugo.robert@eleves.ndmissions.fr",
+      "role": "student",
+      "classCode": "601",
+      "status": "active"
+    },
+    {
+      "id": "u-s7",
+      "m365Id": "m365-s-007",
+      "firstName": "Léa",
+      "lastName": "RICHARD",
+      "email": "lea.richard@eleves.ndmissions.fr",
+      "upn": "lea.richard@eleves.ndmissions.fr",
+      "role": "student",
+      "classCode": "601",
+      "status": "active"
+    },
+    {
+      "id": "u-s8",
+      "m365Id": "m365-s-008",
+      "firstName": "Louis",
+      "lastName": "DURAND",
+      "email": "louis.durand@eleves.ndmissions.fr",
+      "upn": "louis.durand@eleves.ndmissions.fr",
+      "role": "student",
+      "classCode": "602",
+      "status": "active"
+    },
+    {
+      "id": "u-s9",
+      "m365Id": "m365-s-009",
+      "firstName": "Chloe",
+      "lastName": "MOREAU",
+      "email": "chloe.moreau@eleves.ndmissions.fr",
+      "upn": "chloe.moreau@eleves.ndmissions.fr",
+      "role": "student",
+      "classCode": "602",
+      "status": "active"
+    },
+    {
+      "id": "u-s10",
+      "m365Id": "m365-s-010",
+      "firstName": "Maxime",
+      "lastName": "LAMBERT",
+      "email": "maxime.lambert@eleves.ndmissions.fr",
+      "upn": "maxime.lambert@eleves.ndmissions.fr",
+      "role": "student",
+      "classCode": "101",
+      "specialties": [
+        "Mathématiques",
+        "HGGSP",
+        "Physique-Chimie"
+      ],
+      "status": "active"
+    },
+    {
+      "id": "u-s11",
+      "m365Id": "m365-s-011",
+      "firstName": "Sarah",
+      "lastName": "BONNET",
+      "email": "sarah.bonnet@eleves.ndmissions.fr",
+      "upn": "sarah.bonnet@eleves.ndmissions.fr",
+      "role": "student",
+      "classCode": "101",
+      "specialties": [
+        "HGGSP",
+        "SES",
+        "HLP"
+      ],
+      "status": "active"
+    },
+    {
+      "id": "u-s12",
+      "m365Id": "m365-s-012",
+      "firstName": "Alexandre",
+      "lastName": "FONTAINE",
+      "email": "alexandre.fontaine@eleves.ndmissions.fr",
+      "upn": "alexandre.fontaine@eleves.ndmissions.fr",
+      "role": "student",
+      "classCode": "101",
+      "specialties": [
+        "Mathématiques",
+        "NSI",
+        "Physique-Chimie"
+      ],
+      "status": "active"
+    },
+    {
+      "id": "u-s13",
+      "m365Id": "m365-s-013",
+      "firstName": "Inès",
+      "lastName": "ROUSSEL",
+      "email": "ines.roussel@eleves.ndmissions.fr",
+      "upn": "ines.roussel@eleves.ndmissions.fr",
+      "role": "student",
+      "classCode": "101",
+      "specialties": [
+        "SES",
+        "HGGSP",
+        "LLCER"
+      ],
+      "status": "active"
+    },
+    {
+      "id": "u-s14",
+      "m365Id": "m365-s-014",
+      "firstName": "Julien",
+      "lastName": "MULLER",
+      "email": "julien.muller@eleves.ndmissions.fr",
+      "upn": "julien.muller@eleves.ndmissions.fr",
+      "role": "student",
+      "classCode": "T01",
+      "specialties": [
+        "Mathématiques",
+        "Physique-Chimie"
+      ],
+      "status": "active"
+    },
+    {
+      "id": "u-s15",
+      "m365Id": "m365-s-015",
+      "firstName": "Manon",
+      "lastName": "HENRY",
+      "email": "manon.henry@eleves.ndmissions.fr",
+      "upn": "manon.henry@eleves.ndmissions.fr",
+      "role": "student",
+      "classCode": "T01",
+      "specialties": [
+        "HGGSP",
+        "SES"
+      ],
+      "status": "active"
+    },
+    {
+      "id": "u-s16",
+      "m365Id": "m365-s-016",
+      "firstName": "Théo",
+      "lastName": "GAUTHIER",
+      "email": "theo.gauthier@eleves.ndmissions.fr",
+      "upn": "theo.gauthier@eleves.ndmissions.fr",
+      "role": "student",
+      "classCode": "",
+      "status": "anomaly",
+      "anomalyNote": "Classe non renseignée dans Entra ID"
+    },
+    {
+      "id": "u-s17",
+      "m365Id": "m365-s-017",
+      "firstName": "Jade",
+      "lastName": "COLIN",
+      "email": "jade.colin@eleves.ndmissions.fr",
+      "upn": "jade.colin@eleves.ndmissions.fr",
+      "role": "student",
+      "classCode": "101",
+      "specialties": [],
+      "status": "anomaly",
+      "anomalyNote": "Spécialités de 1ère non renseignées"
+    }
+  ],
+  "teams": [
+    {
+      "id": "tm-601-fran",
+      "m365TeamId": "t-team-601-fran",
+      "name": "601-Français",
+      "classCode": "601",
+      "subjectCode": "FRAN",
+      "subjectName": "Français",
+      "schoolYear": "2026-2027",
+      "memberCount": 30,
+      "teacherCount": 1,
+      "status": "synced",
+      "autoManaged": true,
+      "isClassTeam": true,
+      "lastSync": "2026-10-02T09:30:00Z"
+    },
+    {
+      "id": "tm-601-math",
+      "m365TeamId": "t-team-601-math",
+      "name": "601-Mathématiques",
+      "classCode": "601",
+      "subjectCode": "MATH",
+      "subjectName": "Mathématiques",
+      "schoolYear": "2026-2027",
+      "memberCount": 30,
+      "teacherCount": 1,
+      "status": "synced",
+      "autoManaged": true,
+      "isClassTeam": true,
+      "lastSync": "2026-10-02T09:30:00Z"
+    },
+    {
+      "id": "tm-601-ang",
+      "m365TeamId": "t-team-601-ang",
+      "name": "601-Anglais",
+      "classCode": "601",
+      "subjectCode": "ANG",
+      "subjectName": "Anglais",
+      "schoolYear": "2026-2027",
+      "memberCount": 30,
+      "teacherCount": 1,
+      "status": "synced",
+      "autoManaged": true,
+      "isClassTeam": true,
+      "lastSync": "2026-10-02T09:30:00Z"
+    },
+    {
+      "id": "tm-601-hg",
+      "m365TeamId": "t-team-601-hg",
+      "name": "601-Histoire-Géographie",
+      "classCode": "601",
+      "subjectCode": "HG",
+      "subjectName": "Histoire-Géo",
+      "schoolYear": "2026-2027",
+      "memberCount": 30,
+      "teacherCount": 1,
+      "status": "synced",
+      "autoManaged": true,
+      "isClassTeam": true,
+      "lastSync": "2026-10-02T09:30:00Z"
+    },
+    {
+      "id": "tm-601-emc",
+      "m365TeamId": "t-team-601-emc",
+      "name": "601-EMC",
+      "classCode": "601",
+      "subjectCode": "EMC",
+      "subjectName": "EMC",
+      "schoolYear": "2026-2027",
+      "memberCount": 30,
+      "teacherCount": 1,
+      "status": "synced",
+      "autoManaged": true,
+      "isClassTeam": true,
+      "lastSync": "2026-10-02T09:30:00Z"
+    },
+    {
+      "id": "tm-601-svt",
+      "m365TeamId": "t-team-601-svt",
+      "name": "601-SVT",
+      "classCode": "601",
+      "subjectCode": "SVT",
+      "subjectName": "SVT",
+      "schoolYear": "2026-2027",
+      "memberCount": 30,
+      "teacherCount": 1,
+      "status": "synced",
+      "autoManaged": true,
+      "isClassTeam": true,
+      "lastSync": "2026-10-02T09:30:00Z"
+    },
+    {
+      "id": "tm-601-pc",
+      "m365TeamId": "t-team-601-pc",
+      "name": "601-Physique-Chimie",
+      "classCode": "601",
+      "subjectCode": "PC",
+      "subjectName": "Physique-Chimie",
+      "schoolYear": "2026-2027",
+      "memberCount": 30,
+      "teacherCount": 1,
+      "status": "synced",
+      "autoManaged": true,
+      "isClassTeam": true,
+      "lastSync": "2026-10-02T09:30:00Z"
+    },
+    {
+      "id": "tm-601-tech",
+      "m365TeamId": "t-team-601-tech",
+      "name": "601-Technologie",
+      "classCode": "601",
+      "subjectCode": "TECH",
+      "subjectName": "Technologie",
+      "schoolYear": "2026-2027",
+      "memberCount": 30,
+      "teacherCount": 1,
+      "status": "synced",
+      "autoManaged": true,
+      "isClassTeam": true,
+      "lastSync": "2026-10-02T09:30:00Z"
+    },
+    {
+      "id": "tm-601-eps",
+      "m365TeamId": "t-team-601-eps",
+      "name": "601-EPS",
+      "classCode": "601",
+      "subjectCode": "EPS",
+      "subjectName": "EPS",
+      "schoolYear": "2026-2027",
+      "memberCount": 30,
+      "teacherCount": 1,
+      "status": "synced",
+      "autoManaged": true,
+      "isClassTeam": true,
+      "lastSync": "2026-10-02T09:30:00Z"
+    },
+    {
+      "id": "tm-601-art",
+      "m365TeamId": "t-team-601-art",
+      "name": "601-Arts Plastiques",
+      "classCode": "601",
+      "subjectCode": "ART",
+      "subjectName": "Arts Plastiques",
+      "schoolYear": "2026-2027",
+      "memberCount": 30,
+      "teacherCount": 1,
+      "status": "synced",
+      "autoManaged": true,
+      "isClassTeam": true,
+      "lastSync": "2026-10-02T09:30:00Z"
+    },
+    {
+      "id": "tm-601-mus",
+      "m365TeamId": "t-team-601-mus",
+      "name": "601-Éducation Musicale",
+      "classCode": "601",
+      "subjectCode": "MUS",
+      "subjectName": "Éducation Musicale",
+      "schoolYear": "2026-2027",
+      "memberCount": 30,
+      "teacherCount": 1,
+      "status": "synced",
+      "autoManaged": true,
+      "isClassTeam": true,
+      "lastSync": "2026-10-02T09:30:00Z"
+    },
+    {
+      "id": "tm-602-fran",
+      "m365TeamId": "t-team-602-fran",
+      "name": "602-Français",
+      "classCode": "602",
+      "subjectCode": "FRAN",
+      "subjectName": "Français",
+      "schoolYear": "2026-2027",
+      "memberCount": 31,
+      "teacherCount": 1,
+      "status": "synced",
+      "autoManaged": true,
+      "isClassTeam": true,
+      "lastSync": "2026-10-02T09:30:00Z"
+    },
+    {
+      "id": "tm-602-math",
+      "m365TeamId": "t-team-602-math",
+      "name": "602-Mathématiques",
+      "classCode": "602",
+      "subjectCode": "MATH",
+      "subjectName": "Mathématiques",
+      "schoolYear": "2026-2027",
+      "memberCount": 31,
+      "teacherCount": 1,
+      "status": "synced",
+      "autoManaged": true,
+      "isClassTeam": true,
+      "lastSync": "2026-10-02T09:30:00Z"
+    },
+    {
+      "id": "tm-101-fran",
+      "m365TeamId": "t-team-101-fran",
+      "name": "101-Français",
+      "classCode": "101",
+      "subjectCode": "FRAN",
+      "subjectName": "Français",
+      "schoolYear": "2026-2027",
+      "memberCount": 34,
+      "teacherCount": 1,
+      "status": "synced",
+      "autoManaged": true,
+      "isClassTeam": true,
+      "lastSync": "2026-10-02T09:30:00Z"
+    },
+    {
+      "id": "tm-101-hggsp",
+      "m365TeamId": "t-team-101-hggsp",
+      "name": "101-HGGSP",
+      "classCode": "101",
+      "subjectCode": "SPE-HGGSP",
+      "subjectName": "HGGSP",
+      "schoolYear": "2026-2027",
+      "memberCount": 22,
+      "teacherCount": 1,
+      "status": "synced",
+      "autoManaged": true,
+      "isClassTeam": true,
+      "lastSync": "2026-10-02T09:30:00Z"
+    },
+    {
+      "id": "tm-101-math",
+      "m365TeamId": "t-team-101-math",
+      "name": "101-Mathématiques",
+      "classCode": "101",
+      "subjectCode": "SPE-MATH",
+      "subjectName": "Mathématiques",
+      "schoolYear": "2026-2027",
+      "memberCount": 26,
+      "teacherCount": 1,
+      "status": "synced",
+      "autoManaged": true,
+      "isClassTeam": true,
+      "lastSync": "2026-10-02T09:30:00Z"
+    },
+    {
+      "id": "tm-101-nsi",
+      "m365TeamId": "t-team-101-nsi",
+      "name": "101-NSI",
+      "classCode": "101",
+      "subjectCode": "SPE-NSI",
+      "subjectName": "NSI",
+      "schoolYear": "2026-2027",
+      "memberCount": 14,
+      "teacherCount": 1,
+      "status": "synced",
+      "autoManaged": true,
+      "isClassTeam": true,
+      "lastSync": "2026-10-02T09:30:00Z"
+    },
+    {
+      "id": "tm-manual-proj",
+      "m365TeamId": "t-team-proj-erasmus",
+      "name": "Projet Erasmus+ NDM 2026",
+      "classCode": "Projet",
+      "subjectCode": "PROJ",
+      "subjectName": "Projet International",
+      "schoolYear": "2026-2027",
+      "memberCount": 18,
+      "teacherCount": 3,
+      "status": "synced",
+      "autoManaged": false,
+      "isClassTeam": false,
+      "lastSync": "2026-09-15T14:00:00Z"
+    }
+  ],
+  "anomalies": [
+    {
+      "id": "anom-1",
+      "type": "NO_CLASS",
+      "title": "Classe non renseignée",
+      "description": "Élève Théo GAUTHIER sans classe assignée dans Entra ID",
+      "severity": "warning",
+      "userId": "u-s16",
+      "userName": "Théo GAUTHIER",
+      "resolved": false,
+      "resolutionHint": "Assigner la classe dans la fiche ou vérifier dans Microsoft Entra ID"
+    },
+    {
+      "id": "anom-2",
+      "type": "NO_SPECIALTY",
+      "title": "Spécialité non renseignée",
+      "description": "Élève Jade COLIN en 1ère 1 sans aucune spécialité déclarée",
+      "severity": "warning",
+      "userId": "u-s17",
+      "userName": "Jade COLIN",
+      "classCode": "101",
+      "resolved": false,
+      "resolutionHint": "Sélectionner les 3 spécialités de Première"
+    },
+    {
+      "id": "anom-3",
+      "type": "TEAM_ERROR",
+      "title": "Équipe manquante détectée",
+      "description": "606-Technologie non présente sur Microsoft Teams",
+      "severity": "error",
+      "teamName": "606-Technologie",
+      "classCode": "606",
+      "resolved": false,
+      "resolutionHint": "Lancer la création automatique lors de la synchronisation"
+    },
+    {
+      "id": "anom-4",
+      "type": "TEACHER_UNASSIGNED",
+      "title": "Enseignant non affecté",
+      "description": "304-Technologie n'a aucun enseignant désigné",
+      "severity": "warning",
+      "classCode": "304",
+      "resolved": false,
+      "resolutionHint": "Affecter un professeur de technologie à la classe 304"
+    },
+    {
+      "id": "anom-5",
+      "type": "MULTI_CLASS",
+      "title": "Élève avec double classe",
+      "description": "Élève Romain D. présent temporairement dans ELEVE-501 et ELEVE-502",
+      "severity": "error",
+      "userName": "Romain DUPUIS",
+      "resolved": false,
+      "resolutionHint": "Conserver la classe active 502 et retirer l'ancien groupe"
+    },
+    {
+      "id": "anom-6",
+      "type": "MISSING_M365",
+      "title": "Compte M365 introuvable",
+      "description": "Compte invité prof.externe@ndmissions.fr sans licence Teams Education",
+      "severity": "warning",
+      "userName": "Professeur Externe",
+      "resolved": false,
+      "resolutionHint": "Attribuer une licence Microsoft 365 A3/A5 Enseignant"
+    }
+  ],
+  "logs": [
+    {
+      "id": "log-1",
+      "timestamp": "2026-10-02 18:02:14",
+      "action": "CRÉATION",
+      "target": "606-Technologie",
+      "details": "Création équipe Class Teams via Microsoft Graph",
+      "status": "Réussi",
+      "source": "GraphAPI"
+    },
+    {
+      "id": "log-2",
+      "timestamp": "2026-10-02 18:01:45",
+      "action": "AJOUT",
+      "target": "601-Français",
+      "user": "Jean DUPONT",
+      "details": "Ajout de membre (rôle: Student)",
+      "status": "Réussi",
+      "source": "GraphAPI"
+    },
+    {
+      "id": "log-3",
+      "timestamp": "2026-10-02 18:01:42",
+      "action": "AJOUT",
+      "target": "601-Mathématiques",
+      "user": "Paul MARTIN",
+      "details": "Ajout de membre (rôle: Student)",
+      "status": "Réussi",
+      "source": "GraphAPI"
+    },
+    {
+      "id": "log-4",
+      "timestamp": "2026-10-02 18:01:10",
+      "action": "RETRAIT",
+      "target": "602-Français",
+      "user": "Luc DURAND",
+      "details": "Retrait suite à changement de classe vers 601",
+      "status": "Réussi",
+      "source": "GraphAPI"
+    },
+    {
+      "id": "log-5",
+      "timestamp": "2026-10-02 18:00:00",
+      "action": "SYNCHRONISATION",
+      "target": "Tenant Microsoft 365",
+      "details": "Synchronisation différentielle automatique planifiée (18h00)",
+      "status": "Réussi",
+      "source": "NDM-Core"
+    },
+    {
+      "id": "log-6",
+      "timestamp": "2026-10-02 12:00:00",
+      "action": "SYNCHRONISATION",
+      "target": "Tenant Microsoft 365",
+      "details": "Synchronisation différentielle automatique planifiée (12h00)",
+      "status": "Réussi",
+      "source": "NDM-Core"
+    }
+  ],
+  "config": {
+    "tenantId": "55b01275-e53b-4146-94a3-cb58e71ec7bf",
+    "clientId": "1b4e3135-d949-4e36-9d17-d15d3ab49743",
+    "clientSecret": "32d738c4-8b87-4936-b0a5-68bf349773df",
+    "clientSecretSet": true,
+    "namingPattern": "[CLASSE]-[MATIÈRE]",
+    "teamTemplate": "educationClass",
+    "syncMode": "group",
+    "entraGroupPrefix": "ELEVE-",
+    "entraAttributeName": "Classe",
+    "studentDomain": "eleves.ndmissions.fr",
+    "teacherDomain": "ndmissions.fr",
+    "autoSyncEnabled": true,
+    "syncSchedule": [
+      "06:00",
+      "12:00",
+      "18:00"
+    ],
+    "currentSchoolYear": "2026-2027",
+    "autoArchivePastYears": true,
+    "lastSuccessfulSync": "2026-10-02T18:02:14Z",
+    "connected": true
+  },
+  "reports": [
+    {
+      "id": "rep-001",
+      "timestamp": "2026-10-02 18:02:14",
+      "date": "02/10/2026",
+      "schoolYear": "2026-2027",
+      "type": "FULL",
+      "totalUsers": 1395,
+      "studentsCount": 1250,
+      "teachersCount": 145,
+      "classesCount": 37,
+      "teamsAnalyzed": 412,
+      "teamsCreated": 18,
+      "studentsAdded": 27,
+      "studentsRemoved": 4,
+      "classChanges": 3,
+      "errors": 2,
+      "warnings": 4,
+      "details": [
+        "Analyse complète de Microsoft Entra ID terminée en 4.2s",
+        "37 classes vérifiées (Collège: 24, Lycée: 13)",
+        "18 équipes manquantes créées avec modèle Class",
+        "27 ajouts différentiels effectués sans toucher aux membres existants",
+        "4 élèves retirés de leurs anciennes classes suite à mutation",
+        "2 erreurs mineures enregistrées dans les anomalies (licences M365)"
+      ],
+      "status": "warning"
+    }
+  ]
+}
