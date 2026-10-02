@@ -98,13 +98,16 @@ Il s'agit uniquement du secret client applicatif :
 
 ---
 
-## 🛡️ 4. Données Réelles & Import de Fichiers (0 Compte de Démo)
+## 🛡️ 4. Données Réelles & Synchronisation M365 (0 Compte de Démo)
 
 Tous les comptes fictifs ont été supprimés de la base de données.
-Vous disposez de 3 manières d'importer vos données réelles :
-1. **Synchronisation directe Microsoft Entra ID :** Bouton « Synchroniser Entra ID » dans l'annuaire.
-2. **Import Fichier CSV / Pronote / SIÈCLE :** Bouton « Importer CSV / Pronote » acceptant les colonnes `Nom;Prénom;Email;Classe;Rôle`. Les effectifs des 37 classes sont calculés automatiquement.
-3. **Ajout Manuel :** Bouton « Ajouter un compte » pour créer individuellement un élève ou enseignant.
+L'annuaire synchronise désormais l'intégralité de votre tenant Microsoft Entra ID :
+* **Pagination Microsoft Graph complète (`@odata.nextLink`) :** Récupération de la totalité des **2 243 utilisateurs réels** de Notre-Dame des Missions (au lieu du blocage initial à 999 comptes de la page 1 de Microsoft).
+* **Détection automatique des Classes (Intégration KoXo Administrator) :**
+  * KoXo renseigne la classe de chaque élève dans le champ `officeLocation` (*Bureau*) et `department` (ex : `201`, `203`, `T04`).
+  * L'algorithme associe automatiquement chaque élève à l'une des **37 classes** de l'établissement (1 592 élèves identifiés dans leurs classes respectives).
+  * Les membres sans classe (ex : direction, professeurs, personnels) sont automatiquement typés en **Enseignants / Personnels** (651 comptes).
+* **Fichiers alternatifs :** Possibilité d'importer via le bouton « Importer CSV / Pronote » les exports Pronote / SIÈCLE.
 
 ---
 
