@@ -35,7 +35,7 @@ apt-get install -y curl wget git rsync ca-certificates gnupg lsb-release build-e
 
 echo -e "\n${BLUE}[2/5] Vérification et installation de Node.js 22 LTS & npm...${NC}"
 if ! command -v node &> /dev/null; then
-  echo "Installation de Node.js 22..."
+  echo "Installation de Node.js 22 LTS..."
   curl -fsSL https://deb.nodesource.com/setup_22.x | bash -
   apt-get install -y nodejs
 else
@@ -75,14 +75,14 @@ After=network.target
 Type=simple
 User=root
 WorkingDirectory=/opt/ndm-teams-manager
-ExecStart=/usr/bin/npm start
+ExecStart=/bin/bash -c "PATH=$PATH:/usr/local/bin:/usr/bin npm start"
 Restart=always
 RestartSec=10
 Environment=NODE_ENV=production
 Environment=PORT=3000
 Environment=TENANT_ID=55b01275-e53b-4146-94a3-cb58e71ec7bf
-Environment=CLIENT_ID=1b4e3135-d949-4e36-9d17-d15d3ab49743
-Environment=CLIENT_SECRET=32d738c4-8b87-4936-b0a5-68bf349773df
+Environment=CLIENT_ID=1b4e3135-da49-4e36-9d17-d15d3ab497d3
+Environment=CLIENT_SECRET=ktx8Q~v7mEzWEPGdaKKdineLMn9mTuYsolA_CarH
 
 [Install]
 WantedBy=multi-user.target
@@ -94,14 +94,93 @@ if [ -f "package.json" ]; then
   systemctl restart ndm-teams.service
 fi
 
-IP_ADDR=$(hostname -I | awk '{print $1}')
+# Génération systématique du README.md à jour
+cat << 'README_EOF' > /opt/ndm-teams-manager/README.md
+# NDM Teams Manager — Gestion Automatique des Équipes Microsoft Teams
+
+**Établissement :** Ensemble Scolaire Notre-Dame des Missions  
+**Périmètre :** Collège (24 classes) & Lycée (13 classes) — Total : 37 classes  
+**Source Utilisateurs :** 100% Réel Microsoft Entra ID & Fichiers officiels (Pronote / SIÈCLE) — 0 compte de démo  
+**Architecture :** 100% Serveur (Node.js/Express + Vite SPA), Zéro Cache Navigateur, Adapté iFrame & Mobile  
+**Cible :** Conteneur LXC Proxmox Debian 12 (avec Docker & npm)  
+
+---
+
+## 🚀 1. Déploiement via FileZilla (SFTP)
+
+1. Connectez-vous via **FileZilla** à votre conteneur **LXC Proxmox Debian 12** :
+   * **Hôte :** `<IP_DE_VOTRE_CONTENEUR_LXC>`
+   * **Port :** `22`
+   * **Protocole :** SFTP
+   * **Utilisateur :** `root`
+   * **Répertoire distant cible :**
+     ```text
+     /opt/ndm-teams-manager/
+     ```
+
+2. Glissez-déposez tous les fichiers du projet dans `/opt/ndm-teams-manager/`.
+
+3. Dans la console ou terminal Proxmox du conteneur LXC, exécutez le script tout-en-un :
+   ```bash
+   cd /opt/ndm-teams-manager
+   chmod +x scripts/install-all-in-one.sh
+   ./scripts/install-all-in-one.sh
+   ```
+
+---
+
+## 🔑 2. Identifiants Microsoft 365 / Entra ID configurés
+
+* **Tenant ID :** `55b01275-e53b-4146-94a3-cb58e71ec7bf`
+* **Client ID :** `1b4e3135-da49-4e36-9d17-d15d3ab497d3`
+* **Client Secret :** `32d738c4-8b87-4936-b0a5-68bf349773df` (sécurisé côté serveur)
+* **Procédure de validation sur Azure Portal (Erreur AADSTS700016) :**
+  1. Rendez-vous sur portal.azure.com > Microsoft Entra ID > Inscriptions d'applications.
+  2. Sélectionnez l'application (Client ID: 1b4e3135-d949-4e36-9d17-d15d3ab49743).
+  3. Allez dans 'Autorisations de l’API' et cliquez sur 'Accorder un consentement d’administrateur'.
+
+---
+
+## 📱 3. Accès & Caractéristiques Clés
+
+* **URL de l'application :** `http://<IP_DU_CONTENEUR_LXC>:3000`
+* **Zéro Cache :** Headers `Cache-Control: no-store, no-cache, must-revalidate`
+* **Intégration iFrame :** `X-Frame-Options: ALLOWALL` & `Content-Security-Policy: frame-ancestors *;`
+* **Responsive 100% :** Compatible smartphones, tablettes et bureau
+
+---
+
+## 📦 4. Gestion du Service Systemd
+
+```bash
+systemctl status ndm-teams       # Statut du service
+systemctl restart ndm-teams      # Redémarrage du service
+journalctl -u ndm-teams -f       # Suivi des logs en temps réel
+```
+
+---
+
+## 🐙 5. Déploiement GitHub
+
+* **Utilisateur :** `serviceinformatique-droid`
+* **Dépôt :** `ndm-teams-manager`
+* **Script :**
+  ```bash
+  cd /opt/ndm-teams-manager
+  chmod +x scripts/push-github.sh
+  ./scripts/push-github.sh "Mise à jour NDM Teams Manager"
+  ```
+README_EOF
+
+IP_ADDR=$(hostname -I 2>/dev/null | awk '{print $1}' || echo "IP_LXC")
 
 echo -e "\n${GREEN}==============================================================================${NC}"
 echo -e "${GREEN} INSTALLATION TERMINÉE AVEC SUCCÈS SUR VOTRE CONTENEUR LXC DEBIAN 12 ! ${NC}"
 echo -e "${GREEN}==============================================================================${NC}"
 echo -e "Accès Web (100% sans cache navigateur, adapté iFrame & mobile) :"
 echo -e "${YELLOW}http://${IP_ADDR}:3000${NC}"
-echo -e "\nCommandes utiles :"
+echo -e "\nDocumentation à jour créée : /opt/ndm-teams-manager/README.md"
+echo -e "Commandes utiles :"
 echo -e "- Statut du service : ${BLUE}systemctl status ndm-teams${NC}"
 echo -e "- Logs en direct    : ${BLUE}journalctl -u ndm-teams -f${NC}"
 echo -e "- Redémarrage       : ${BLUE}systemctl restart ndm-teams${NC}"

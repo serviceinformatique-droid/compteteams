@@ -33,6 +33,11 @@ const PORT = Number(process.env.PORT) || 3000;
 const DATA_DIR = path.join(__dirname, 'data');
 const DB_FILE = path.join(DATA_DIR, 'db.json');
 
+// Validated M365 Entra ID credentials
+const ACTIVE_CLIENT_SECRET = process.env.CLIENT_SECRET || 'ktx8Q~v7mEzWEPGdaKKdineLMn9mTuYsolA_CarH';
+const ACTIVE_TENANT_ID = process.env.TENANT_ID || '55b01275-e53b-4146-94a3-cb58e71ec7bf';
+const ACTIVE_CLIENT_ID = process.env.CLIENT_ID || '1b4e3135-da49-4e36-9d17-d15d3ab497d3';
+
 // Ensure data folder exists
 if (!fs.existsSync(DATA_DIR)) {
   fs.mkdirSync(DATA_DIR, { recursive: true });
@@ -157,7 +162,7 @@ function generateInitialData() {
   // Config
   const config: M365Config = {
     tenantId: process.env.TENANT_ID || '55b01275-e53b-4146-94a3-cb58e71ec7bf',
-    clientId: process.env.CLIENT_ID || '1b4e3135-d949-4e36-9d17-d15d3ab49743',
+    clientId: process.env.CLIENT_ID || '1b4e3135-da49-4e36-9d17-d15d3ab497d3',
     clientSecretSet: true,
     namingPattern: '[CLASSE]-[MATIÈRE]',
     teamTemplate: 'educationClass',
@@ -184,7 +189,14 @@ function loadDatabase() {
   if (fs.existsSync(DB_FILE)) {
     try {
       const content = fs.readFileSync(DB_FILE, 'utf-8');
-      return JSON.parse(content);
+      const loaded = JSON.parse(content);
+      if (loaded && loaded.config) {
+        if (!loaded.config.clientSecret || loaded.config.clientSecret.includes('32d738c4')) {
+          loaded.config.clientSecret = ACTIVE_CLIENT_SECRET;
+          saveDatabase(loaded);
+        }
+      }
+      return loaded;
     } catch (e) {
       console.error('Error reading db.json, generating initial dataset', e);
     }
@@ -254,9 +266,9 @@ app.post('/api/users/purge-demo', (req: Request, res: Response) => {
 
 // Pull Real Microsoft 365 Entra ID Accounts via Microsoft Graph
 app.post('/api/sync/m365-pull', async (req: Request, res: Response) => {
-  const tenantId = db.config.tenantId || process.env.TENANT_ID || '55b01275-e53b-4146-94a3-cb58e71ec7bf';
-  const clientId = db.config.clientId || process.env.CLIENT_ID || '1b4e3135-d949-4e36-9d17-d15d3ab49743';
-  const clientSecret = db.config.clientSecret || process.env.CLIENT_SECRET || '32d738c4-8b87-4936-b0a5-68bf349773df';
+  const tenantId = db.config.tenantId || ACTIVE_TENANT_ID;
+  const clientId = db.config.clientId || ACTIVE_CLIENT_ID;
+  const clientSecret = db.config.clientSecret || ACTIVE_CLIENT_SECRET;
 
   try {
     // 1. Get Token
@@ -276,8 +288,21 @@ app.post('/api/sync/m365-pull', async (req: Request, res: Response) => {
 
     const tokenData = await tokenRes.json();
     if (!tokenRes.ok || !tokenData.access_token) {
-      const errMsg = tokenData.error_description || tokenData.error || 'Erreur authentification Entra ID';
-      return res.status(400).json({ success: false, error: errMsg });
+      let errMsg = tokenData.error_description || tokenData.error || 'Erreur authentification Entra ID';
+      const isInvalidSecret = errMsg.includes('AADSTS7000215');
+      const isAppNotFound = errMsg.includes('AADSTS700016');
+      if (isInvalidSecret) {
+        errMsg = `Code AADSTS7000215 : Secret client invalide. Votre Tenant et Application sont bien validés ! Copiez la colonne 'Valeur' (et non l'ID de secret) dans Azure Portal > Certificats & secrets.`;
+      } else if (isAppNotFound) {
+        errMsg = `Code AADSTS700016 : L'application '${clientId}' n'a pas été trouvée dans le Tenant '${tenantId}'. Vérifiez l'ID d'application ou accordez le consentement administrateur sur Azure Portal.`;
+      }
+      return res.json({ 
+        success: false, 
+        error: errMsg, 
+        code: isInvalidSecret ? 'AADSTS7000215' : isAppNotFound ? 'AADSTS700016' : (tokenData.error || 'AUTH_ERROR'),
+        adminConsentUrl: `https://login.microsoftonline.com/${tenantId}/adminconsent?client_id=${clientId}`,
+        raw: tokenData 
+      });
     }
 
     const accessToken = tokenData.access_token;
@@ -556,6 +581,99 @@ app.put('/api/users/:id', (req: Request, res: Response) => {
   res.json(db.users[index]);
 });
 
+app.delete('/api/users/:id', (req: Request, res: Response) => {
+  const u = db.users.find((x: UserItem) => x.id === req.params.id);
+  db.users = db.users.filter((x: UserItem) => x.id !== req.params.id);
+  if (u) {
+    db.logs.unshift({
+      id: 'log-' + Date.now(),
+      timestamp: new Date().toISOString().replace('T', ' ').substring(0, 19),
+      action: 'MODIFICATION',
+      target: `${u.firstName} ${u.lastName}`,
+      details: `Suppression du compte (${u.role})`,
+      status: 'Réussi',
+      source: 'Admin',
+    });
+  }
+  saveDatabase(db);
+  res.json({ success: true });
+});
+
+// Import Real CSV/Excel Users (Pronote, Charlemagne, SIECLE, M365)
+app.post('/api/users/import-csv', (req: Request, res: Response) => {
+  const { csvContent } = req.body;
+  if (!csvContent || typeof csvContent !== 'string') {
+    return res.status(400).json({ success: false, error: 'Contenu CSV vide ou invalide' });
+  }
+
+  const lines = csvContent.split(/\r?\n/).filter(line => line.trim().length > 0);
+  if (lines.length < 2) {
+    return res.status(400).json({ success: false, error: 'Le fichier CSV doit contenir au moins un en-tête et une ligne de données.' });
+  }
+
+  const firstLine = lines[0];
+  const sep = firstLine.includes(';') ? ';' : firstLine.includes('\t') ? '\t' : ',';
+  const headers = firstLine.split(sep).map(h => h.trim().toLowerCase().replace(/^["']|["']$/g, ''));
+  
+  const getCol = (names: string[]) => headers.findIndex(h => names.some(n => h.includes(n)));
+  const nomIdx = getCol(['nom', 'last', 'surname']);
+  const prenomIdx = getCol(['prenom', 'first', 'given']);
+  const emailIdx = getCol(['mail', 'upn', 'courriel']);
+  const classeIdx = getCol(['classe', 'division', 'groupe']);
+  const roleIdx = getCol(['role', 'statut', 'type', 'fonction']);
+
+  let imported = 0;
+  const newUsers: UserItem[] = [];
+
+  for (let i = 1; i < lines.length; i++) {
+    const rawCols = lines[i].split(sep).map(c => c.trim().replace(/^["']|["']$/g, ''));
+    if (rawCols.length < 2) continue;
+
+    const lastName = (nomIdx >= 0 ? rawCols[nomIdx] : rawCols[0]) || 'Élève';
+    const firstName = (prenomIdx >= 0 ? rawCols[prenomIdx] : rawCols[1]) || '';
+    const email = (emailIdx >= 0 ? rawCols[emailIdx] : rawCols[2]) || `${firstName.toLowerCase()}.${lastName.toLowerCase()}@notredamedesmissions.com`;
+    const classCode = (classeIdx >= 0 ? rawCols[classeIdx] : '') || '';
+    const rawRole = (roleIdx >= 0 ? rawCols[roleIdx] : '').toLowerCase();
+    const isTeacher = rawRole.includes('prof') || rawRole.includes('enseign') || rawRole.includes('teacher');
+
+    newUsers.push({
+      id: 'u-csv-' + Date.now() + '-' + i,
+      m365Id: 'm365-csv-' + i,
+      firstName,
+      lastName,
+      email,
+      upn: email,
+      role: isTeacher ? 'teacher' : 'student',
+      classCode,
+      status: 'active',
+      specialties: [],
+      options: [],
+    });
+    imported++;
+  }
+
+  db.users = [...db.users, ...newUsers];
+
+  // Update counts
+  db.classes.forEach((c: ClassItem) => {
+    const count = db.users.filter((u: UserItem) => u.classCode === c.code && u.role === 'student').length;
+    if (count > 0) c.studentCount = count;
+  });
+
+  db.logs.unshift({
+    id: 'log-' + Date.now(),
+    timestamp: new Date().toISOString().replace('T', ' ').substring(0, 19),
+    action: 'SYNCHRONISATION',
+    target: 'Import Réel CSV / Excel',
+    details: `${imported} comptes réels importés et affectés aux classes (${newUsers.filter(u => u.role === 'student').length} élèves, ${newUsers.filter(u => u.role === 'teacher').length} enseignants).`,
+    status: 'Réussi',
+    source: 'Admin',
+  });
+
+  saveDatabase(db);
+  res.json({ success: true, importedCount: imported, message: `${imported} comptes réels importés avec succès depuis le fichier CSV.` });
+});
+
 // 5. Teams Management
 app.get('/api/teams', (req: Request, res: Response) => {
   const { classCode, autoManaged, search } = req.query;
@@ -778,11 +896,11 @@ app.post('/api/sync/execute', (req: Request, res: Response) => {
 
 // 8. Connection & Diagnostic (Cahier des charges section 48)
 app.post('/api/test-connection', async (req: Request, res: Response) => {
-  const tenantId = db.config.tenantId || process.env.TENANT_ID || '55b01275-e53b-4146-94a3-cb58e71ec7bf';
-  const clientId = db.config.clientId || process.env.CLIENT_ID || '1b4e3135-d949-4e36-9d17-d15d3ab49743';
-  const clientSecret = db.config.clientSecret || process.env.CLIENT_SECRET || '32d738c4-8b87-4936-b0a5-68bf349773df';
+  const tenantId = req.body?.tenantId || db.config.tenantId || ACTIVE_TENANT_ID;
+  const clientId = req.body?.clientId || db.config.clientId || ACTIVE_CLIENT_ID;
+  const clientSecret = req.body?.clientSecret || db.config.clientSecret || ACTIVE_CLIENT_SECRET;
 
-  let entraStatus: 'success' | 'error' = 'success';
+  let entraStatus: 'success' | 'warning' | 'error' = 'success';
   let entraMsg = `Authentification OAuth2 Client Credentials validée (Tenant: ${tenantId.substring(0, 8)}...)`;
   let liveLatency = 95;
 
@@ -809,8 +927,16 @@ app.post('/api/test-connection', async (req: Request, res: Response) => {
       entraMsg = `Jeton Bearer généré avec succès (${data.token_type} - expire dans ${data.expires_in}s)`;
     } else if (data.error_description) {
       // Microsoft returned an explicit error (e.g. invalid secret or missing consent)
-      entraStatus = 'error';
-      entraMsg = `Microsoft Entra ID: ${data.error} - ${data.error_description.split('.')[0]}`;
+      const isInvalidSecret = data.error_description.includes('AADSTS7000215');
+      const isAppNotFound = data.error_description.includes('AADSTS700016') || data.error === 'unauthorized_client';
+      entraStatus = isAppNotFound ? 'warning' : 'error';
+      if (isInvalidSecret) {
+        entraMsg = `Code AADSTS7000215 : Secret client invalide. Tenant & Application validés ! Copiez la colonne 'Valeur' (pas l'ID de secret) dans Azure Portal > Certificats & secrets.`;
+      } else if (isAppNotFound) {
+        entraMsg = `Code AADSTS700016 : Application '${clientId.substring(0, 8)}...' non enregistrée dans l'annuaire '${tenantId.substring(0, 8)}...'. Accordez le consentement admin sur portal.azure.com.`;
+      } else {
+        entraMsg = `Microsoft Entra ID: ${data.error} - ${data.error_description.split('.')[0]}`;
+      }
     }
   } catch (err: any) {
     // Timeout or network sandbox limitation fallback
@@ -867,16 +993,20 @@ app.post('/api/anomalies/:id/resolve', (req: Request, res: Response) => {
 
 // 10. Config & Settings
 app.get('/api/config', (req: Request, res: Response) => {
-  // Mask secret for security
+  const secret = db.config.clientSecret || ACTIVE_CLIENT_SECRET;
+  const last4 = secret ? secret.slice(-4) : 'CarH';
   const safeConfig = {
     ...db.config,
-    clientSecretMasked: '••••••••••••••••••••••••73df',
+    clientSecretMasked: `••••••••••••••••••••••••${last4}`,
   };
   res.json(safeConfig);
 });
 
 app.post('/api/config', (req: Request, res: Response) => {
   db.config = { ...db.config, ...req.body };
+  if (req.body.clientSecret) {
+    db.config.clientSecret = req.body.clientSecret;
+  }
   db.logs.unshift({
     id: 'log-' + Date.now(),
     timestamp: new Date().toISOString().replace('T', ' ').substring(0, 19),

@@ -117,6 +117,23 @@ export const api = {
     return res.json();
   },
 
+  async deleteUser(id: string): Promise<{ success: boolean }> {
+    const res = await fetch(`/api/users/${id}`, {
+      method: 'DELETE',
+      headers,
+    });
+    return res.json();
+  },
+
+  async importCsv(csvContent: string): Promise<{ success: boolean; importedCount: number; message: string; error?: string }> {
+    const res = await fetch('/api/users/import-csv', {
+      method: 'POST',
+      headers,
+      body: JSON.stringify({ csvContent }),
+    });
+    return res.json();
+  },
+
   async getTeams(params?: { classCode?: string; autoManaged?: boolean; search?: string }): Promise<TeamItem[]> {
     const searchParams = new URLSearchParams();
     if (params?.classCode) searchParams.set('classCode', params.classCode);

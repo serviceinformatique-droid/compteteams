@@ -61,13 +61,47 @@ export default function App() {
       if (res.success) {
         showToast(res.message, 'success');
       } else {
-        showToast(res.error || 'Erreur importation M365', 'error');
+        showToast(res.error || 'Erreur importation M365', 'warning');
       }
       await loadData();
     } catch (err: any) {
-      showToast('Impossible de contacter Microsoft Graph', 'error');
+      showToast('Impossible de contacter Microsoft Graph', 'warning');
     } finally {
       setIsPullingM365(false);
+    }
+  };
+
+  const handleImportCsv = async (csvContent: string) => {
+    try {
+      const res = await api.importCsv(csvContent);
+      if (res.success) {
+        showToast(res.message, 'success');
+        await loadData();
+      } else {
+        showToast(res.error || 'Erreur import CSV', 'error');
+      }
+    } catch (err) {
+      showToast('Erreur traitement fichier CSV', 'error');
+    }
+  };
+
+  const handleCreateUser = async (userData: Partial<UserItem>) => {
+    try {
+      await api.createUser(userData);
+      showToast(`Compte créé : ${userData.firstName} ${userData.lastName}`, 'success');
+      await loadData();
+    } catch (err) {
+      showToast('Erreur création compte', 'error');
+    }
+  };
+
+  const handleDeleteUser = async (id: string) => {
+    try {
+      await api.deleteUser(id);
+      showToast('Compte supprimé avec succès', 'success');
+      await loadData();
+    } catch (err) {
+      showToast('Erreur suppression compte', 'error');
     }
   };
 
@@ -439,6 +473,9 @@ export default function App() {
                 onPullM365={handlePullM365}
                 onPurgeDemo={handlePurgeDemo}
                 isPullingM365={isPullingM365}
+                onImportCsv={handleImportCsv}
+                onCreateUser={handleCreateUser}
+                onDeleteUser={handleDeleteUser}
               />
             )}
 

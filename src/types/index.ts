@@ -161,7 +161,7 @@ export interface DiagnosticStep {
   step: number;
   name: string;
   description: string;
-  status: 'pending' | 'success' | 'error';
+  status: 'pending' | 'success' | 'warning' | 'error';
   message: string;
   latencyMs?: number;
 }

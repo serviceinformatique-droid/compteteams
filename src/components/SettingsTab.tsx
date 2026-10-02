@@ -13,7 +13,9 @@ import {
   RefreshCw, 
   Calendar, 
   HelpCircle,
-  AlertTriangle
+  AlertTriangle,
+  Eye,
+  EyeOff
 } from 'lucide-react';
 import type { M365Config, DiagnosticStep } from '../types/index.ts';
 
@@ -34,6 +36,8 @@ export const SettingsTab: React.FC<SettingsTabProps> = ({
 }) => {
   const [tenantId, setTenantId] = useState(config.tenantId);
   const [clientId, setClientId] = useState(config.clientId);
+  const [clientSecretInput, setClientSecretInput] = useState('');
+  const [showSecret, setShowSecret] = useState(false);
   const [namingPattern, setNamingPattern] = useState(config.namingPattern);
   const [teamTemplate, setTeamTemplate] = useState(config.teamTemplate);
   const [syncMode, setSyncMode] = useState(config.syncMode);
@@ -50,9 +54,9 @@ export const SettingsTab: React.FC<SettingsTabProps> = ({
 
   const handleSaveConfig = (e: React.FormEvent) => {
     e.preventDefault();
-    onUpdateConfig({
-      tenantId,
-      clientId,
+    const updatePayload: any = {
+      tenantId: tenantId.trim(),
+      clientId: clientId.trim(),
       namingPattern,
       teamTemplate,
       syncMode,
@@ -60,7 +64,11 @@ export const SettingsTab: React.FC<SettingsTabProps> = ({
       studentDomain,
       teacherDomain,
       autoSyncEnabled,
-    });
+    };
+    if (clientSecretInput.trim()) {
+      updatePayload.clientSecret = clientSecretInput.trim();
+    }
+    onUpdateConfig(updatePayload);
   };
 
   const handleRunDiagnostic = async () => {
@@ -122,31 +130,96 @@ export const SettingsTab: React.FC<SettingsTabProps> = ({
         {diagnosticSteps ? (
           <div className="space-y-2 pt-1">
             <div className="flex justify-between items-center text-xs text-slate-400 mb-2">
-              <span>Résultat : <strong className="text-emerald-400">7 / 7 Étapes Validées</strong></span>
+              <span>
+                Diagnostic :{' '}
+                <strong className={diagnosticSteps.some(s => s.status === 'error') ? 'text-rose-400' : diagnosticSteps.some(s => s.status === 'warning') ? 'text-amber-400' : 'text-emerald-400'}>
+                  {diagnosticSteps.filter(s => s.status === 'success').length} / {diagnosticSteps.length} Étapes Validées
+                </strong>
+              </span>
               <span>Temps total : <strong className="text-indigo-300 font-mono">{diagLatency} ms</strong></span>
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
-              {diagnosticSteps.map((step) => (
-                <div
-                  key={step.step}
-                  className="p-3 rounded-lg bg-slate-900/80 border border-slate-700/60 flex items-start gap-2.5 text-xs"
-                >
-                  <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0 mt-0.5" />
-                  <div className="space-y-0.5 flex-1">
-                    <div className="flex items-center justify-between">
-                      <span className="font-semibold text-white">
-                        {step.step}. {step.name}
-                      </span>
-                      {step.latencyMs && (
-                        <span className="font-mono text-[10px] text-slate-500">{step.latencyMs} ms</span>
-                      )}
+              {diagnosticSteps.map((step) => {
+                const isSuccess = step.status === 'success';
+                const isWarning = step.status === 'warning';
+                return (
+                  <div
+                    key={step.step}
+                    className={`p-3 rounded-lg bg-slate-900/80 border flex items-start gap-2.5 text-xs ${
+                      isSuccess
+                        ? 'border-slate-700/60'
+                        : isWarning
+                        ? 'border-amber-500/40 bg-amber-950/20'
+                        : 'border-rose-500/40 bg-rose-950/20'
+                    }`}
+                  >
+                    {isSuccess ? (
+                      <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0 mt-0.5" />
+                    ) : isWarning ? (
+                      <AlertTriangle className="w-4 h-4 text-amber-400 shrink-0 mt-0.5" />
+                    ) : (
+                      <XCircle className="w-4 h-4 text-rose-400 shrink-0 mt-0.5" />
+                    )}
+                    <div className="space-y-0.5 flex-1">
+                      <div className="flex items-center justify-between">
+                        <span className="font-semibold text-white">
+                          {step.step}. {step.name}
+                        </span>
+                        {step.latencyMs && (
+                          <span className="font-mono text-[10px] text-slate-500">{step.latencyMs} ms</span>
+                        )}
+                      </div>
+                      <div className="text-[11px] text-slate-400">{step.description}</div>
+                      <div className={`text-[11px] font-mono ${
+                        isSuccess ? 'text-emerald-400' : isWarning ? 'text-amber-300' : 'text-rose-400'
+                      }`}>
+                        {step.message}
+                      </div>
                     </div>
-                    <div className="text-[11px] text-slate-400">{step.description}</div>
-                    <div className="text-[11px] text-emerald-400 font-mono">{step.message}</div>
                   </div>
-                </div>
-              ))}
+                );
+              })}
+            </div>
+
+            <div className="mt-3 p-4 rounded-xl bg-slate-900/90 border border-slate-700 text-xs space-y-3">
+              <div className="font-bold text-white flex items-center justify-between">
+                <span className="flex items-center gap-2">
+                  <Key className="w-4 h-4 text-indigo-400" />
+                  Guide Azure Portal : Résolution de l'erreur AADSTS7000215 (Secret client)
+                </span>
+                <a
+                  href="https://portal.azure.com/#view/Microsoft_AAD_IAM/ActiveDirectoryMenuBlade/~/RegisteredApps"
+                  target="_blank"
+                  rel="noreferrer"
+                  className="inline-flex items-center gap-1 px-2.5 py-1 rounded bg-indigo-600/30 hover:bg-indigo-600/50 text-indigo-300 border border-indigo-500/40 text-[11px] font-semibold transition"
+                >
+                  Ouvrir Azure Portal (portal.azure.com) ↗
+                </a>
+              </div>
+
+              <div className="p-3 bg-amber-500/10 border border-amber-500/30 rounded-lg text-amber-200 text-[11px]">
+                <strong className="text-white block mb-1">
+                  🎉 Excellente nouvelle : Votre Tenant et votre Application sont 100 % reconnus par Microsoft !
+                </strong>
+                L'erreur <code>AADSTS7000215: Invalid client secret provided</code> signifie que Microsoft a trouvé votre application, mais que la valeur du secret client entrée est erronée ou a expiré. 
+                <span className="text-amber-100 font-medium block mt-1">
+                  👉 Ne recommencez surtout pas le tenant ! Il suffit simplement de générer un nouveau secret client dans Azure et de copier la colonne <u>Valeur</u>.
+                </span>
+              </div>
+
+              <p className="text-slate-300 text-[11px] font-semibold">
+                Procédure rapide (30 secondes) :
+              </p>
+              <ol className="list-decimal list-inside space-y-1.5 text-slate-300 text-[11px]">
+                <li>Sur <strong className="text-white">portal.azure.com</strong>, allez dans <strong className="text-white">Microsoft Entra ID</strong> &gt; <strong className="text-white">Inscriptions d'applications</strong> &gt; Votre application.</li>
+                <li>Dans le menu de gauche, cliquez sur <strong className="text-white">Certificats & secrets</strong>.</li>
+                <li>Cliquez sur <strong className="text-indigo-300">« + Nouveau secret client »</strong>, mettez la description <em>NDM Teams</em> et validez.</li>
+                <li>
+                  <strong className="text-emerald-300">⚠️ POINT CRUCIAL :</strong> Copiez immédiatement la colonne <strong className="text-white bg-slate-800 px-1 py-0.5 rounded border border-slate-600">Valeur</strong> (et <u>SURTOUT PAS</u> l'ID de secret !).
+                </li>
+                <li>Collez cette valeur ci-dessous dans le champ <strong>Client Secret</strong>, puis cliquez sur <strong>Enregistrer</strong> et <strong>Lancer le diagnostic</strong>.</li>
+              </ol>
             </div>
           </div>
         ) : (
@@ -191,16 +264,67 @@ export const SettingsTab: React.FC<SettingsTabProps> = ({
             </div>
 
             <div>
-              <label className="block text-slate-400 font-medium mb-1">Client Secret (Clé secrète Graph)</label>
-              <input
-                type="password"
-                disabled
-                value="••••••••••••••••••••••••••••••••"
-                className="w-full bg-slate-950 border border-slate-800 rounded-lg px-3 py-2 text-slate-500 font-mono cursor-not-allowed"
-              />
-              <span className="text-[10px] text-emerald-400 mt-1 block">
-                ✓ Clé applicative sécurisée côté serveur (/opt/ndm-teams-manager/data/db.json)
+              <div className="flex items-center justify-between mb-1">
+                <label className="block text-slate-400 font-medium">
+                  Client Secret (Valeur de la clé secrète Azure)
+                </label>
+                <span className="text-[10px] text-amber-400">
+                  Collez la <b>Valeur</b> (pas l'ID de secret)
+                </span>
+              </div>
+              <div className="relative">
+                <input
+                  type={showSecret ? "text" : "password"}
+                  value={clientSecretInput}
+                  onChange={(e) => setClientSecretInput(e.target.value)}
+                  placeholder="Laisser vide pour conserver le secret existant, ou coller le nouveau secret..."
+                  className="w-full bg-slate-900 border border-slate-700 focus:border-indigo-500 rounded-lg px-3 py-2 pr-10 text-white font-mono text-xs focus:outline-none"
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowSecret(!showSecret)}
+                  className="absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-white p-1"
+                  title={showSecret ? "Masquer le secret" : "Afficher le secret"}
+                >
+                  {showSecret ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                </button>
+              </div>
+              <span className="text-[10px] text-slate-400 mt-1 block">
+                {clientSecretInput ? (
+                  <span className="text-emerald-400 font-semibold">✓ Nouveau secret saisi — Cliquez ci-dessous pour l'appliquer et relancer le test.</span>
+                ) : (
+                  <span>✓ Clé secrète configurée côté serveur. Cliquez ci-dessous pour tester immédiatement la connexion Entra ID.</span>
+                )}
               </span>
+
+              <div className="pt-2">
+                <button
+                  type="button"
+                  onClick={async () => {
+                    const updatePayload: any = {
+                      tenantId: tenantId.trim(),
+                      clientId: clientId.trim(),
+                      namingPattern,
+                      teamTemplate,
+                      syncMode,
+                      entraGroupPrefix,
+                      studentDomain,
+                      teacherDomain,
+                      autoSyncEnabled,
+                    };
+                    if (clientSecretInput.trim()) {
+                      updatePayload.clientSecret = clientSecretInput.trim();
+                    }
+                    await onUpdateConfig(updatePayload);
+                    handleRunDiagnostic();
+                  }}
+                  disabled={isRunningDiagnostic}
+                  className="w-full flex items-center justify-center gap-2 py-2 px-3 rounded-lg bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white font-semibold text-xs transition shadow-md shadow-emerald-950/40 disabled:opacity-50"
+                >
+                  <Play className="w-3.5 h-3.5 fill-current" />
+                  {isRunningDiagnostic ? 'Diagnostic en cours...' : 'Appliquer & Lancer le diagnostic 7 points'}
+                </button>
+              </div>
             </div>
 
             {/* Méthode d'identification (Section 6) */}
