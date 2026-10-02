@@ -152,6 +152,81 @@ export const api = {
     return res.json();
   },
 
+  async generateTeamsCatalog(): Promise<{ success: boolean; createdCount: number; totalTeams: number; message: string }> {
+    const res = await fetch('/api/teams/generate-catalog', {
+      method: 'POST',
+      headers,
+    });
+    return res.json();
+  },
+
+  async applyOfficialAssignments(): Promise<{ success: boolean; totalAssigned: number; teamsCreated: number; totalTeams: number; message: string }> {
+    const res = await fetch('/api/teams/apply-official-assignments', {
+      method: 'POST',
+      headers,
+    });
+    return res.json();
+  },
+
+  async assignTeacherToTeam(teamId: string, teacherIds: string[]): Promise<{ success: boolean; team: TeamItem }> {
+    const res = await fetch(`/api/teams/${teamId}/assign-teacher`, {
+      method: 'POST',
+      headers,
+      body: JSON.stringify({ teacherIds }),
+    });
+    return res.json();
+  },
+
+  async addTeacherToTeam(teamId: string, teacherId: string): Promise<{ success: boolean; team: TeamItem }> {
+    const res = await fetch(`/api/teams/${teamId}/add-teacher`, {
+      method: 'POST',
+      headers,
+      body: JSON.stringify({ teacherId }),
+    });
+    return res.json();
+  },
+
+  async removeTeacherFromTeam(teamId: string, teacherId: string): Promise<{ success: boolean; team: TeamItem }> {
+    const res = await fetch(`/api/teams/${teamId}/remove-teacher`, {
+      method: 'POST',
+      headers,
+      body: JSON.stringify({ teacherId }),
+    });
+    return res.json();
+  },
+
+  async bulkAddAdminOwners(adminEmails?: string[], teamIds?: string[]): Promise<{
+    success: boolean;
+    modifiedTeamsCount: number;
+    adminsAdded: { id: string; name: string; email: string }[];
+    message: string;
+    error?: string;
+  }> {
+    const res = await fetch('/api/teams/bulk-add-admin-owners', {
+      method: 'POST',
+      headers,
+      body: JSON.stringify({ adminEmails, teamIds }),
+    });
+    return res.json();
+  },
+
+  async provisionTeamM365(teamId: string): Promise<{ success: boolean; m365TeamId?: string; team?: TeamItem; error?: string; message?: string }> {
+    const res = await fetch(`/api/teams/${teamId}/provision-m365`, {
+      method: 'POST',
+      headers,
+    });
+    return res.json();
+  },
+
+  async importTeacherAssignmentsCsv(csvContent: string): Promise<{ success: boolean; assignedCount: number; message: string; error?: string }> {
+    const res = await fetch('/api/teams/import-assignments-csv', {
+      method: 'POST',
+      headers,
+      body: JSON.stringify({ csvContent }),
+    });
+    return res.json();
+  },
+
   async pullM365(): Promise<{ success: boolean; importedCount: number; teamsCount: number; message: string; error?: string }> {
     const res = await fetch('/api/sync/m365-pull', {
       method: 'POST',

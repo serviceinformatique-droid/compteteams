@@ -62,7 +62,7 @@ Environment=NODE_ENV=production
 Environment=PORT=3000
 Environment=TENANT_ID=55b01275-e53b-4146-94a3-cb58e71ec7bf
 Environment=CLIENT_ID=1b4e3135-da49-4e36-9d17-d15d3ab497d3
-Environment=CLIENT_SECRET=32d738c4-8b87-4936-b0a5-68bf349773df
+Environment=CLIENT_SECRET=ktx8Q~v7mEzWEPGdaKKdineLMn9mTuYsolA_CarH
 
 [Install]
 WantedBy=multi-user.target
@@ -98,24 +98,63 @@ Il s'agit uniquement du secret client applicatif :
 
 ---
 
-## 🛡️ 4. Données Réelles & Synchronisation M365 (0 Compte de Démo)
+## 🛡️ 4. Données Réelles & Effectifs Exacts (Filtre KoXo 2026-2027)
 
 Tous les comptes fictifs ont été supprimés de la base de données.
-L'annuaire synchronise désormais l'intégralité de votre tenant Microsoft Entra ID :
-* **Pagination Microsoft Graph complète (`@odata.nextLink`) :** Récupération de la totalité des **2 243 utilisateurs réels** de Notre-Dame des Missions (au lieu du blocage initial à 999 comptes de la page 1 de Microsoft).
-* **Détection automatique des Classes (Intégration KoXo Administrator) :**
-  * KoXo renseigne la classe de chaque élève dans le champ `officeLocation` (*Bureau*) et `department` (ex : `201`, `203`, `T04`).
-  * L'algorithme associe automatiquement chaque élève à l'une des **37 classes** de l'établissement (1 592 élèves identifiés dans leurs classes respectives).
-  * Les membres sans classe (ex : direction, professeurs, personnels) sont automatiquement typés en **Enseignants / Personnels** (651 comptes).
-* **Fichiers alternatifs :** Possibilité d'importer via le bouton « Importer CSV / Pronote » les exports Pronote / SIÈCLE.
+L'annuaire synchronise l'intégralité de votre tenant Microsoft Entra ID avec un filtrage rigoureux basé sur les règles **KoXo Administrator** pour l'année scolaire active 2026-2027 :
+* **Effectifs Réels des Élèves Actifs :** Exactement **1 174 élèves actifs** répartis dans les **37 classes** :
+  * **Collège (601 à 306) :** 28 à 33 élèves par classe (ex: 601: 33, 602: 31, 604: 30, 501: 33, 401: 30, 301: 30...).
+  * **Lycée 2nde (201 à 205) :** 29 à 34 élèves par classe (ex: 201: 30, 204: 34, 205: 29...).
+  * **Lycée 1ère (101 à 104) :** 34 à 35 élèves par classe (ex: 101: 35, 102: 35, 103: 35, 104: 34).
+  * **Lycée Terminale (T01 à T04) :** 36 à 38 élèves par classe (ex: T01: 38, T02: 36, T03: 37, T04: 37).
+* **Pourquoi les effectifs étaient erronés auparavant ?**
+  Dans Entra ID, d'anciens comptes d'élèves ayant obtenu leur baccalauréat en 2024 ou 2025 conservaient l'historique « T01 » dans leur département, et des comptes de salles/visio (comme `201-2@`) contenaient des numéros de classe.
+  Le serveur filtre désormais strictement par le champ officiel KoXo `officeLocation` de la rentrée 2026-2027. Les 393 anciens comptes sont automatiquement classés en **Anciens élèves / Archivés** et n'alourdissent plus les effectifs réels des classes.
+* **Corps professoral réel :** **117 professeurs réels** identifiés et reliés aux équipes pédagogiques.
 
 ---
 
-## 🚀 5. Déploiement GitHub
+## 👥 5. Création Réelle sur Teams & Grille Officielle des Professeurs
+
+### Pourquoi les équipes n'étaient pas encore créées en direct sur Teams ?
+C'est une **sécurité essentielle** : l'application ne crée pas aveuglément 260 équipes vides sur votre tenant Microsoft 365 tant que vous n'avez pas validé le plan prévisionnel et les professeurs référents.
+
+### Intégration du Document Officiel UnDeuxTEMPS / Axess (30/09/2026) :
+* **565 équipes officielles** ont été automatiquement générées et affectées pour l'intégralité des **37 classes** (601 à 606, 501 à 506, 401 à 406, 301 à 306, 201 à 205, 101 à 104, T01 à T04).
+* Chaque professeur (ex: *Mme LESTANG Marie* en Français, *M. GUEDJ GUILLAUME* en Maths, *Mme LACOSTE AUDE-MARIE* en Histoire-Géo, *M. BACQUET GILLES* en Techno, etc.) est associé avec son compte réel Microsoft Entra ID comme **Propriétaire (Owner)** de l'équipe de sa matière.
+* Le **Professeur Principal** de chaque classe (`mainTeacher`) est automatiquement renseigné à partir de la matière *Vie de classe*.
+
+### Multi-Propriétaires & Co-Propriété des Administrateurs Office :
+* **Multi-Propriétaires par équipe :** Chaque équipe supporte plusieurs propriétaires (Owners). Vous pouvez assigner conjointement le professeur titulaire, un co-enseignant ou suppléant, et les comptes administrateurs Office.
+* **Comptes Administrateurs Office associés :**
+  * `mjoubin@notredamedesmissions.com` (Mikael JOUBIN, Responsable Informatique)
+  * `admin@notredamedesmissions.com` (Service Informatique NDM)
+  * `admin@notredamedesmissions.onmicrosoft.com` (Admin Global Microsoft 365)
+* **Bouton Global « 🛡️ Co-propriété Admins Office » :**
+  Dans l'onglet **Équipes Teams**, ce bouton orange permet d'injecter en 1 clic les comptes administrateurs Office en co-propriétaires sur l'ensemble des 565 équipes Teams sans écraser les professeurs de chaque matière.
+* **Création Réelle sur Microsoft Graph :**
+  Lors de la création de l'équipe sur Teams, tous les propriétaires assignés sont passés directement dans `owners@odata.bind` (ou ajoutés via l'API Graph).
+
+### Comment créer les équipes et assigner les professeurs :
+1. **Assignation Multi-Propriétaires :**
+   Sur chaque carte d'équipe, cliquez sur **« Gérer »** ou **« + Assigner »** : une fenêtre interactive s'ouvre avec cases à cocher, recherche rapide et filtres (Tous, Enseignants, Admins Office). Vous pouvez cocher autant d'enseignants et d'admins que nécessaire.
+2. **Co-propriété Massive des Administrateurs :**
+   Cliquez sur **« 🛡️ Co-propriété Admins Office »** pour associer `mjoubin@notredamedesmissions.com` et les admins à toutes les équipes ou aux équipes filtrées.
+3. **Application de la Grille Officielle UnDeuxTEMPS :**
+   Le bouton **« 🪄 Affecter Profs Officiels »** réinjecte les professeurs titulaires par classe et matière.
+4. **Import de Grille Personnalisée (CSV / Excel) :**
+   Le bouton **« 📄 Importer CSV »** permet d'injecter un fichier `classe;matiere;professeur`.
+5. **Création Réelle sur Microsoft Teams Cloud :**
+   * Cliquez sur **« 🚀 Créer sur Teams »** : le serveur contacte l'API Microsoft Graph (`POST /v1.0/groups`), nomme tous les enseignants et administrateurs assignés **Propriétaires (Owners)**, ajoute les élèves réels de la classe comme **Membres**, et active l'équipe Teams.
+   * L'ID Microsoft réel apparaît avec le badge vert **`✓ M365 Cloud`**.
+
+---
+
+## 🚀 6. Déploiement GitHub
 
 Pour synchroniser le code avec votre compte GitHub `serviceinformatique-droid` :
 ```bash
 cd /opt/ndm-teams-manager
 chmod +x scripts/push-github.sh
-./scripts/push-github.sh "feat: synchronisation M365 et mise à jour du projet"
+./scripts/push-github.sh "feat: multi-proprietaires teams et co-propriete mjoubin admins office"
 ```

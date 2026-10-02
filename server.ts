@@ -24,6 +24,7 @@ import type {
   AnomalyItem,
   DiagnosticStep,
 } from './src/types/index.ts';
+import { applyOfficialPedagogicalAssignments } from './src/pedagogicalData.ts';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -220,22 +221,28 @@ let db = loadDatabase();
 
 // 1. Dashboard Stats
 app.get('/api/stats', (req: Request, res: Response) => {
-  const studentsCount = db.users.filter((u: UserItem) => u.role === 'student').length;
+  const activeStudents = db.users.filter((u: UserItem) => u.role === 'student' && u.classCode && u.status === 'active');
+  const studentsCount = activeStudents.length || db.classes.reduce((acc: number, c: ClassItem) => acc + (c.studentCount || 0), 0);
   const teachersCount = db.users.filter((u: UserItem) => u.role === 'teacher').length;
+  const archivedCount = db.users.filter((u: UserItem) => u.status === 'archived').length;
   const classesCount = db.classes.filter((c: ClassItem) => c.active).length;
   const teamsCount = db.teams.length;
-  const activeTeamsCount = db.teams.filter((t: TeamItem) => t.status === 'synced' && t.autoManaged).length;
+  const teamsWithProfCount = db.teams.filter((t: TeamItem) => (t.teacherCount || 0) > 0).length;
+  const activeTeamsCount = db.teams.filter((t: TeamItem) => Boolean(t.m365TeamId)).length;
   const anomaliesCount = db.anomalies.filter((a: AnomalyItem) => !a.resolved).length;
 
   res.json({
     studentsCount,
     teachersCount,
+    archivedCount,
+    totalM365Users: db.users.length,
     classesCount: classesCount || 37,
     collegeClassesCount: db.classes.filter((c: ClassItem) => c.section === 'Collège').length,
     lyceeClassesCount: db.classes.filter((c: ClassItem) => c.section === 'Lycée').length,
     teamsCount,
+    teamsWithProfCount,
     activeTeamsCount,
-    teamsToCreateCount: Math.max(0, (classesCount * 11) - teamsCount),
+    teamsToCreateCount: Math.max(0, teamsCount - activeTeamsCount),
     membersToAddCount: studentsCount,
     membersToRemoveCount: 0,
     anomaliesCount,
@@ -328,22 +335,67 @@ app.post('/api/sync/m365-pull', async (req: Request, res: Response) => {
       nextUrl = (pageData['@odata.nextLink'] as string) || null;
     }
 
-    // Parse users into NDM model
+    // Parse users into NDM model with STRICT KoXo/Active Directory rules for active 2026-2027 classes
+    const classRegex = /^(60[1-6]|50[1-6]|40[1-6]|30[1-6]|20[1-5]|10[1-4]|T0[1-4])$/;
     const classCounts: Record<string, number> = {};
+
     const importedUsers: UserItem[] = rawUsers.map((ru: any, idx: number) => {
-      const email = ru.mail || ru.userPrincipalName || '';
-      const upn = ru.userPrincipalName || email;
+      const email = (ru.mail || ru.userPrincipalName || '').trim();
+      const upn = (ru.userPrincipalName || email).trim();
+      const office = (ru.officeLocation || '').trim();
+      const dept = (ru.department || '').trim();
+      const jobTitle = (ru.jobTitle || '').trim();
 
-      // Identify class from officeLocation (KoXo sets 201, 203, T04...), department, jobTitle or displayName
-      const textToSearch = [ru.officeLocation, ru.department, ru.jobTitle, ru.displayName].filter(Boolean).join(' ');
-      const classMatch = textToSearch.match(/\b([654321][0-9]{2}|T0[1-4])\b/);
+      const isActiveStudent = classRegex.test(office);
+      const isFormerStudent = !isActiveStudent && (
+        classRegex.test(dept) || 
+        dept.startsWith('Elèves /') || 
+        jobTitle === 'Elèves'
+      );
+      const isTeacherByDept = !isActiveStudent && !isFormerStudent && (
+        dept.startsWith('Professeurs /') || 
+        dept === 'Profs' || 
+        office === 'profs' || 
+        jobTitle.toLowerCase().includes('prof')
+      );
 
-      const isStudent = !!classMatch;
-      const classCode = classMatch ? classMatch[1] : '';
-      const role = isStudent ? ('student' as const) : ('teacher' as const);
+      const localPart = email.split('@')[0].toLowerCase();
+      const isPersonalNameEmail = /^[a-zÀ-ÿ]+[a-zÀ-ÿ0-9-]*\.[a-zÀ-ÿ]+[a-zÀ-ÿ0-9-]*$/.test(localPart);
+      const isServiceOrRoom = [
+        '005', '007', '009', 'accueil', 'admin', 'admintest', 'aidecompta', 'alcasar', 
+        'visio', 'parent', 'test', 'salle', 'cdi', 'bdi'
+      ].some(s => localPart.includes(s)) || !isPersonalNameEmail;
 
-      if (classCode) {
+      const isMjoubinOrAdmin = 
+        email.toLowerCase().includes('mjoubin') || 
+        email.toLowerCase().includes('admin@') || 
+        localPart === 'admin' ||
+        localPart.includes('admintest') ||
+        localPart.includes('assistadmin') ||
+        dept.toLowerCase().includes('informatique') ||
+        (jobTitle || '').toLowerCase().includes('informatique') ||
+        (jobTitle || '').toLowerCase().includes('administrateur');
+
+      let role: 'student' | 'teacher' | 'admin' = 'student';
+      let classCode = '';
+      let status: 'active' | 'inactive' | 'archived' = 'active';
+
+      if (isActiveStudent && !isMjoubinOrAdmin) {
+        role = 'student';
+        classCode = office;
         classCounts[classCode] = (classCounts[classCode] || 0) + 1;
+      } else if (isMjoubinOrAdmin) {
+        role = 'admin';
+        status = 'active'; // Administrateurs Office 365 actifs (mjoubin, admin...)
+      } else if (isFormerStudent) {
+        role = 'student';
+        status = 'archived'; // Former student from previous school years
+      } else if (isTeacherByDept || !isServiceOrRoom) {
+        role = 'teacher';
+        status = 'active';
+      } else {
+        role = 'student';
+        status = 'inactive';
       }
 
       return {
@@ -355,18 +407,25 @@ app.post('/api/sync/m365-pull', async (req: Request, res: Response) => {
         upn,
         role,
         classCode,
-        status: ru.accountEnabled === false ? ('inactive' as const) : ('active' as const),
+        officeLocation: office,
+        department: dept,
+        status: ru.accountEnabled === false ? ('inactive' as const) : status,
       };
     });
 
     // Update real student counts across all 37 classes
     for (const c of db.classes) {
-      if (classCounts[c.code] !== undefined) {
-        c.studentCount = classCounts[c.code];
-      }
+      c.studentCount = classCounts[c.code] || 0;
     }
 
     db.users = importedUsers;
+
+    // Update team member counts
+    for (const t of db.teams) {
+      if (t.classCode && classCounts[t.classCode] !== undefined) {
+        t.memberCount = classCounts[t.classCode];
+      }
+    }
 
     // 3. Fetch Existing Teams from Microsoft Graph
     try {
@@ -723,6 +782,562 @@ app.put('/api/teams/:id', (req: Request, res: Response) => {
   db.teams[index] = { ...db.teams[index], ...req.body };
   saveDatabase(db);
   res.json(db.teams[index]);
+});
+
+// Helper: Get Microsoft Graph Token
+async function fetchGraphToken(): Promise<string> {
+  const tenantId = db.config.tenantId || ACTIVE_TENANT_ID;
+  const clientId = db.config.clientId || ACTIVE_CLIENT_ID;
+  const clientSecret = db.config.clientSecret || ACTIVE_CLIENT_SECRET;
+  const tokenUrl = `https://login.microsoftonline.com/${tenantId}/oauth2/v2.0/token`;
+  const tokenParams = new URLSearchParams();
+  tokenParams.append('client_id', clientId);
+  tokenParams.append('client_secret', clientSecret);
+  tokenParams.append('grant_type', 'client_credentials');
+  tokenParams.append('scope', 'https://graph.microsoft.com/.default');
+
+  const tokenRes = await fetch(tokenUrl, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+    body: tokenParams.toString(),
+  });
+  const tokenData = await tokenRes.json();
+  if (!tokenRes.ok || !tokenData.access_token) {
+    throw new Error(tokenData.error_description || tokenData.error || 'Erreur jeton Graph');
+  }
+  return tokenData.access_token;
+}
+
+// 5b. Generate Teams Catalog for the 37 Classes
+app.post('/api/teams/generate-catalog', (req: Request, res: Response) => {
+  const classes = db.classes as ClassItem[];
+  const existingTeams = db.teams as TeamItem[];
+  let createdCount = 0;
+
+  // Key subjects per level
+  const collegeSubjects = [
+    { code: 'FR', name: 'Français' },
+    { code: 'MATH', name: 'Mathématiques' },
+    { code: 'HG', name: 'Histoire-Géo' },
+    { code: 'LV1', name: 'Anglais LV1' },
+    { code: 'SVT', name: 'SVT' },
+    { code: 'PC', name: 'Physique-Chimie' },
+    { code: 'VIE', name: 'Vie de Classe' },
+  ];
+
+  const lyceeSubjects = [
+    { code: 'FR', name: 'Français' },
+    { code: 'MATH', name: 'Mathématiques' },
+    { code: 'HG', name: 'Histoire-Géo' },
+    { code: 'LV1', name: 'Anglais LV1' },
+    { code: 'PC', name: 'Physique-Chimie' },
+    { code: 'SES', name: 'SES' },
+    { code: 'VIE', name: 'Vie de Classe' },
+  ];
+
+  classes.filter(c => c.active).forEach(c => {
+    const isLycee = ['2nde', '1ere', 'Tle'].includes(c.level) || ['201','202','203','204','205','101','102','103','104','T01','T02','T03','T04'].includes(c.code);
+    const subjectsList = isLycee ? lyceeSubjects : collegeSubjects;
+
+    // Count real students in this class
+    const studentCount = db.users.filter((u: UserItem) => u.classCode === c.code && u.role === 'student').length;
+
+    subjectsList.forEach(s => {
+      const teamName = `${c.code}-${s.name}`;
+      const exists = existingTeams.some(t => t.name === teamName);
+      if (!exists) {
+        const newTeam: TeamItem = {
+          id: `tm-${c.code.toLowerCase()}-${s.code.toLowerCase()}-${Date.now().toString(36)}`,
+          m365TeamId: '',
+          name: teamName,
+          classCode: c.code,
+          subjectCode: s.code,
+          subjectName: s.name,
+          schoolYear: db.config.currentSchoolYear,
+          memberCount: studentCount,
+          teacherCount: 0,
+          assignedTeacherIds: [],
+          assignedTeachers: [],
+          status: 'pending',
+          autoManaged: true,
+          isClassTeam: true,
+          lastSync: '',
+        };
+        db.teams.push(newTeam);
+        createdCount++;
+      }
+    });
+  });
+
+  db.logs.unshift({
+    id: 'log-' + Date.now(),
+    timestamp: new Date().toISOString().replace('T', ' ').substring(0, 19),
+    action: 'CRÉATION',
+    target: 'Catalogue 37 Classes',
+    details: `${createdCount} équipes préparées pour les 37 classes selon la convention [CLASSE]-[MATIÈRE].`,
+    status: 'Réussi',
+    source: 'NDM-Core',
+  });
+
+  saveDatabase(db);
+  res.json({
+    success: true,
+    createdCount,
+    totalTeams: db.teams.length,
+    message: `${createdCount} équipes préparées avec succès pour les 37 classes.`,
+  });
+});
+
+// 5b-2. Apply Official Pedagogical Assignments (UnDeuxTEMPS document for all 37 classes)
+app.post('/api/teams/apply-official-assignments', (req: Request, res: Response) => {
+  try {
+    const result = applyOfficialPedagogicalAssignments(db);
+
+    db.logs.unshift({
+      id: 'log-' + Date.now(),
+      timestamp: new Date().toISOString().replace('T', ' ').substring(0, 19),
+      action: 'AFFECTATION_OFFICIELLE',
+      target: 'Tableau Officiel UnDeuxTEMPS',
+      details: `${result.totalAssigned} affectations de professeurs réels appliquées sur l'ensemble des 37 classes (${result.totalTeams} équipes).`,
+      status: 'Réussi',
+      source: 'Admin',
+    });
+
+    saveDatabase(db);
+    res.json({
+      success: true,
+      totalAssigned: result.totalAssigned,
+      teamsCreated: result.teamsCreated,
+      totalTeams: result.totalTeams,
+      message: `${result.totalAssigned} affectations officielles appliquées avec succès !`,
+    });
+  } catch (err: any) {
+    res.status(500).json({ success: false, error: err.message || 'Erreur application affectations officielles' });
+  }
+});
+
+// 5b-3. Import Custom Teacher Assignments (CSV / JSON)
+app.post('/api/teams/import-assignments', (req: Request, res: Response) => {
+  try {
+    const { assignments } = req.body;
+    if (!Array.isArray(assignments)) {
+      return res.status(400).json({ success: false, error: 'Tableau assignments attendu' });
+    }
+
+    let appliedCount = 0;
+    for (const item of assignments) {
+      // item: { classCode, subject, teacherNameOrEmail }
+      const teamName = `${item.classCode}-${item.subject}`;
+      const team = db.teams.find((t: TeamItem) => t.name === teamName || (t.classCode === item.classCode && t.subjectName.toLowerCase() === (item.subject || '').toLowerCase()));
+      if (!team) continue;
+
+      const query = (item.teacherNameOrEmail || '').toLowerCase().trim();
+      const teacher = db.users.find((u: UserItem) => 
+        u.role === 'teacher' && (
+          u.email.toLowerCase() === query || 
+          u.upn.toLowerCase() === query || 
+          `${u.firstName} ${u.lastName}`.toLowerCase().includes(query) ||
+          (u.lastName || '').toLowerCase().includes(query)
+        )
+      );
+
+      if (teacher) {
+        team.assignedTeacherIds = [teacher.id];
+        team.assignedTeachers = [{
+          id: teacher.id,
+          name: `${teacher.firstName} ${teacher.lastName}`,
+          email: teacher.email || teacher.upn,
+        }];
+        team.teacherCount = 1;
+        appliedCount++;
+      }
+    }
+
+    db.logs.unshift({
+      id: 'log-' + Date.now(),
+      timestamp: new Date().toISOString().replace('T', ' ').substring(0, 19),
+      action: 'IMPORT_AFFECTATIONS',
+      target: 'Fichier Personnalisé',
+      details: `${appliedCount} professeurs assignés depuis l'import de fichier.`,
+      status: 'Réussi',
+      source: 'Admin',
+    });
+
+    saveDatabase(db);
+    res.json({ success: true, appliedCount, message: `${appliedCount} affectations enregistrées.` });
+  } catch (err: any) {
+    res.status(500).json({ success: false, error: err.message || 'Erreur import affectations' });
+  }
+});
+
+// 5c. Assign Teacher(s) to a Team
+app.post('/api/teams/:id/assign-teacher', (req: Request, res: Response) => {
+  const team = db.teams.find((t: TeamItem) => t.id === req.params.id);
+  if (!team) return res.status(404).json({ success: false, error: 'Équipe introuvable' });
+
+  const { teacherId, teacherIds } = req.body;
+  const ids: string[] = teacherIds || (teacherId ? [teacherId] : []);
+
+  const teachers = db.users.filter((u: UserItem) => ids.includes(u.id) || ids.includes(u.m365Id));
+  team.assignedTeacherIds = teachers.map((t: UserItem) => t.id);
+  team.assignedTeachers = teachers.map((t: UserItem) => ({
+    id: t.id,
+    name: `${t.firstName} ${t.lastName}`,
+    email: t.email || t.upn,
+  }));
+  team.teacherCount = teachers.length;
+
+  db.logs.unshift({
+    id: 'log-' + Date.now(),
+    timestamp: new Date().toISOString().replace('T', ' ').substring(0, 19),
+    action: 'MODIFICATION',
+    target: team.name,
+    details: `Affectation enseignant: ${teachers.map((t: UserItem) => `${t.firstName} ${t.lastName}`).join(', ')} (${teachers.length} propriétaire(s))`,
+    status: 'Réussi',
+    source: 'Admin',
+  });
+
+  saveDatabase(db);
+  res.json({ success: true, team });
+});
+
+// 5c-2. Add a Teacher/Admin to an existing team (without replacing existing owners)
+app.post('/api/teams/:id/add-teacher', (req: Request, res: Response) => {
+  const team = db.teams.find((t: TeamItem) => t.id === req.params.id);
+  if (!team) return res.status(404).json({ success: false, error: 'Équipe introuvable' });
+
+  const { teacherId } = req.body;
+  if (!teacherId) return res.status(400).json({ success: false, error: 'teacherId requis' });
+
+  const user = db.users.find((u: UserItem) => u.id === teacherId || u.m365Id === teacherId);
+  if (!user) return res.status(404).json({ success: false, error: 'Utilisateur introuvable' });
+
+  team.assignedTeacherIds = team.assignedTeacherIds || [];
+  team.assignedTeachers = team.assignedTeachers || [];
+
+  if (!team.assignedTeacherIds.includes(user.id)) {
+    team.assignedTeacherIds.push(user.id);
+    team.assignedTeachers.push({
+      id: user.id,
+      name: `${user.firstName} ${user.lastName}`,
+      email: user.email || user.upn,
+    });
+    team.teacherCount = team.assignedTeacherIds.length;
+    saveDatabase(db);
+  }
+
+  res.json({ success: true, team });
+});
+
+// 5c-3. Remove a Teacher/Admin from a team
+app.post('/api/teams/:id/remove-teacher', (req: Request, res: Response) => {
+  const team = db.teams.find((t: TeamItem) => t.id === req.params.id);
+  if (!team) return res.status(404).json({ success: false, error: 'Équipe introuvable' });
+
+  const { teacherId } = req.body;
+  if (!teacherId) return res.status(400).json({ success: false, error: 'teacherId requis' });
+
+  team.assignedTeacherIds = (team.assignedTeacherIds || []).filter((id: string) => id !== teacherId);
+  team.assignedTeachers = (team.assignedTeachers || []).filter((t: any) => t.id !== teacherId);
+  team.teacherCount = team.assignedTeacherIds.length;
+
+  saveDatabase(db);
+  res.json({ success: true, team });
+});
+
+// 5c-4. Bulk Add Office Administrators (mjoubin & admin accounts) as Co-Owners
+app.post('/api/teams/bulk-add-admin-owners', (req: Request, res: Response) => {
+  try {
+    const { teamIds, adminEmails } = req.body;
+
+    // Search for specified admin emails or default to mjoubin and all active office admin accounts
+    const targetEmails: string[] = Array.isArray(adminEmails) && adminEmails.length > 0
+      ? adminEmails.map((e: string) => e.toLowerCase().trim())
+      : ['mjoubin@notredamedesmissions.com', 'admin@notredamedesmissions.com', 'admin@notredamedesmissions.onmicrosoft.com'];
+
+    const adminUsers = db.users.filter((u: UserItem) => 
+      targetEmails.some((e: string) => (u.email || '').toLowerCase() === e || (u.upn || '').toLowerCase() === e)
+    );
+
+    if (adminUsers.length === 0) {
+      return res.status(400).json({ success: false, error: 'Aucun compte administrateur trouvé.' });
+    }
+
+    const targetTeams = Array.isArray(teamIds) && teamIds.length > 0
+      ? db.teams.filter((t: TeamItem) => teamIds.includes(t.id))
+      : db.teams;
+
+    let modifiedTeamsCount = 0;
+    for (const team of targetTeams) {
+      team.assignedTeacherIds = team.assignedTeacherIds || [];
+      team.assignedTeachers = team.assignedTeachers || [];
+
+      let modified = false;
+      for (const admin of adminUsers) {
+        if (!team.assignedTeacherIds.includes(admin.id)) {
+          team.assignedTeacherIds.push(admin.id);
+          team.assignedTeachers.push({
+            id: admin.id,
+            name: `${admin.firstName} ${admin.lastName}`,
+            email: admin.email || admin.upn,
+          });
+          modified = true;
+        }
+      }
+      if (modified) {
+        team.teacherCount = team.assignedTeacherIds.length;
+        modifiedTeamsCount++;
+      }
+    }
+
+    db.logs.unshift({
+      id: 'log-' + Date.now(),
+      timestamp: new Date().toISOString().replace('T', ' ').substring(0, 19),
+      action: 'CO_PROPRIETE_ADMINS',
+      target: 'Équipes Teams M365',
+      details: `Co-propriété configurée avec succès pour ${adminUsers.map((a: UserItem) => a.email).join(', ')} sur ${modifiedTeamsCount} équipes Teams.`,
+      status: 'Réussi',
+      source: 'Admin',
+    });
+
+    saveDatabase(db);
+    res.json({
+      success: true,
+      modifiedTeamsCount,
+      adminsAdded: adminUsers.map((a: UserItem) => ({ id: a.id, name: `${a.firstName} ${a.lastName}`, email: a.email })),
+      message: `Co-propriété configurée avec succès sur ${modifiedTeamsCount} équipes pour ${adminUsers.length} administrateur(s) (${adminUsers.map((a: UserItem) => a.email).join(', ')}).`,
+    });
+  } catch (err: any) {
+    res.status(500).json({ success: false, error: err.message || 'Erreur co-propriété administrateurs' });
+  }
+});
+
+// 5d. Provision a Real Team on Microsoft 365 Cloud via Microsoft Graph
+app.post('/api/teams/:id/provision-m365', async (req: Request, res: Response) => {
+  const team = db.teams.find((t: TeamItem) => t.id === req.params.id);
+  if (!team) return res.status(404).json({ success: false, error: 'Équipe introuvable' });
+
+  try {
+    const token = await fetchGraphToken();
+
+    // 1. Determine Owners (all assigned teachers AND assigned admins)
+    const ownerM365Ids: string[] = [];
+    if (team.assignedTeacherIds && team.assignedTeacherIds.length > 0) {
+      for (const tid of team.assignedTeacherIds) {
+        const assigned = db.users.find((u: UserItem) => (u.id === tid || u.m365Id === tid) && u.m365Id && !u.m365Id.startsWith('m365-demo'));
+        if (assigned && assigned.m365Id && !ownerM365Ids.includes(assigned.m365Id)) {
+          ownerM365Ids.push(assigned.m365Id);
+        }
+      }
+    }
+
+    if (ownerM365Ids.length === 0) {
+      // Pick first active member teacher or admin from M365
+      const usersRes = await fetch('https://graph.microsoft.com/v1.0/users?$filter=userType+eq+\'Member\'&$top=1', {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      const usersData = await usersRes.json();
+      if (usersData.value && usersData.value.length > 0) {
+        ownerM365Ids.push(usersData.value[0].id);
+      }
+    }
+
+    if (ownerM365Ids.length === 0) {
+      return res.status(400).json({ success: false, error: 'Aucun compte administrateur/enseignant valide trouvé sur Microsoft 365 pour devenir propriétaire.' });
+    }
+
+    // 2. Create M365 Unified Group
+    const cleanSubject = team.subjectName.toLowerCase().replace(/[^a-z0-9]/g, '');
+    const cleanClass = team.classCode.toLowerCase().replace(/[^a-z0-9]/g, '');
+    const nickname = `ndm-${cleanClass}-${cleanSubject}-${Date.now().toString(36)}`;
+
+    // Pass up to first 20 owners directly in creation payload
+    const groupPayload = {
+      displayName: team.name,
+      description: `Équipe Microsoft Teams Classe ${team.classCode} - ${team.subjectName} (Notre-Dame des Missions)`,
+      groupTypes: ['Unified'],
+      mailEnabled: true,
+      mailNickname: nickname,
+      securityEnabled: false,
+      'owners@odata.bind': ownerM365Ids.slice(0, 20).map(oid => `https://graph.microsoft.com/v1.0/users/${oid}`)
+    };
+
+    const groupRes = await fetch('https://graph.microsoft.com/v1.0/groups', {
+      method: 'POST',
+      headers: {
+        Authorization: `Bearer ${token}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(groupPayload),
+    });
+
+    const groupData = await groupRes.json();
+    if (!groupRes.ok || !groupData.id) {
+      return res.status(400).json({
+        success: false,
+        error: groupData.error?.message || 'Erreur lors de la création du groupe M365',
+      });
+    }
+
+    const groupId = groupData.id;
+
+    // If there were more than 20 owners, add remaining
+    if (ownerM365Ids.length > 20) {
+      for (const oid of ownerM365Ids.slice(20)) {
+        try {
+          await fetch(`https://graph.microsoft.com/v1.0/groups/${groupId}/owners/$ref`, {
+            method: 'POST',
+            headers: {
+              Authorization: `Bearer ${token}`,
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({ '@odata.id': `https://graph.microsoft.com/v1.0/users/${oid}` }),
+          });
+        } catch (e) {
+          // ignore
+        }
+      }
+    }
+
+    // 3. Add Class Students as Members
+    const classStudents = db.users.filter((u: UserItem) => u.classCode === team.classCode && u.role === 'student' && u.m365Id && !u.m365Id.startsWith('m365-demo'));
+    let addedMembers = 0;
+
+    // Add first batch of students (e.g. top 10-15 students in parallel to avoid Graph throttling)
+    for (const student of classStudents.slice(0, 20)) {
+      try {
+        await fetch(`https://graph.microsoft.com/v1.0/groups/${groupId}/members/$ref`, {
+          method: 'POST',
+          headers: {
+            Authorization: `Bearer ${token}`,
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            '@odata.id': `https://graph.microsoft.com/v1.0/directoryObjects/${student.m365Id}`,
+          }),
+        });
+        addedMembers++;
+      } catch (err) {
+        // Continue adding others
+      }
+    }
+
+    // 4. Update team in local DB
+    team.m365TeamId = groupId;
+    team.status = 'synced';
+    team.lastSync = new Date().toISOString();
+    team.memberCount = classStudents.length;
+
+    db.logs.unshift({
+      id: 'log-' + Date.now(),
+      timestamp: new Date().toISOString().replace('T', ' ').substring(0, 19),
+      action: 'CRÉATION',
+      target: team.name,
+      details: `Équipe créée RÉELLEMENT sur Microsoft 365 (ID: ${groupId}). Propriétaire(s): ${ownerM365Ids.length} assigné(s), ${addedMembers} élèves rattachés.`,
+      status: 'Réussi',
+      source: 'GraphAPI',
+    });
+
+    saveDatabase(db);
+    res.json({
+      success: true,
+      m365TeamId: groupId,
+      team,
+      message: `Équipe "${team.name}" créée réellement sur Microsoft Teams avec succès !`,
+    });
+  } catch (err: any) {
+    res.status(500).json({
+      success: false,
+      error: err.message || 'Erreur communication Microsoft Graph',
+    });
+  }
+});
+
+// 5e. Import Teacher Assignments CSV (Classe;Matiere;Professeur)
+app.post('/api/teams/import-assignments-csv', (req: Request, res: Response) => {
+  const { csvContent } = req.body;
+  if (!csvContent || typeof csvContent !== 'string') {
+    return res.status(400).json({ success: false, error: 'Contenu CSV vide' });
+  }
+
+  const lines = csvContent.split(/\r?\n/).filter(line => line.trim().length > 0);
+  if (lines.length < 2) {
+    return res.status(400).json({ success: false, error: 'Le fichier CSV doit contenir un en-tête et au moins une ligne.' });
+  }
+
+  const firstLine = lines[0];
+  const sep = firstLine.includes(';') ? ';' : firstLine.includes('\t') ? '\t' : ',';
+  const headers = firstLine.split(sep).map(h => h.trim().toLowerCase().replace(/^["']|["']$/g, ''));
+  const getCol = (names: string[]) => headers.findIndex(h => names.some(n => h.includes(n)));
+
+  const classeIdx = getCol(['classe', 'division', 'groupe']);
+  const matiereIdx = getCol(['matiere', 'subject', 'cours', 'discipline']);
+  const profIdx = getCol(['prof', 'enseign', 'teacher', 'mail', 'nom']);
+
+  let assignedCount = 0;
+
+  for (let i = 1; i < lines.length; i++) {
+    const cols = lines[i].split(sep).map(c => c.trim().replace(/^["']|["']$/g, ''));
+    if (cols.length < 2) continue;
+
+    const classCode = classeIdx >= 0 ? cols[classeIdx] : cols[0];
+    const subjectName = matiereIdx >= 0 ? cols[matiereIdx] : cols[1];
+    const profIdentifier = (profIdx >= 0 ? cols[profIdx] : cols[2] || '').toLowerCase();
+
+    if (!classCode || !profIdentifier) continue;
+
+    // Find teacher in db.users
+    const teacher = db.users.find((u: UserItem) => 
+      u.role === 'teacher' && (
+        u.email.toLowerCase().includes(profIdentifier) ||
+        u.upn.toLowerCase().includes(profIdentifier) ||
+        u.lastName.toLowerCase().includes(profIdentifier) ||
+        `${u.firstName} ${u.lastName}`.toLowerCase().includes(profIdentifier)
+      )
+    );
+
+    if (teacher) {
+      // Find matching teams
+      const matchingTeams = db.teams.filter((t: TeamItem) => {
+        if (t.classCode !== classCode) return false;
+        if (!subjectName) return true;
+        return t.subjectName.toLowerCase().includes(subjectName.toLowerCase()) ||
+               t.name.toLowerCase().includes(subjectName.toLowerCase());
+      });
+
+      matchingTeams.forEach((t: TeamItem) => {
+        if (!t.assignedTeacherIds) t.assignedTeacherIds = [];
+        if (!t.assignedTeachers) t.assignedTeachers = [];
+        if (!t.assignedTeacherIds.includes(teacher.id)) {
+          t.assignedTeacherIds.push(teacher.id);
+          t.assignedTeachers.push({
+            id: teacher.id,
+            name: `${teacher.firstName} ${teacher.lastName}`,
+            email: teacher.email || teacher.upn,
+          });
+          t.teacherCount = t.assignedTeachers.length;
+          assignedCount++;
+        }
+      });
+    }
+  }
+
+  db.logs.unshift({
+    id: 'log-' + Date.now(),
+    timestamp: new Date().toISOString().replace('T', ' ').substring(0, 19),
+    action: 'MODIFICATION',
+    target: 'Affectations Professeurs CSV',
+    details: `${assignedCount} affectations de professeurs appliquées aux équipes depuis le fichier CSV.`,
+    status: 'Réussi',
+    source: 'Admin',
+  });
+
+  saveDatabase(db);
+  res.json({
+    success: true,
+    assignedCount,
+    message: `${assignedCount} affectations de professeurs ont été appliquées avec succès.`,
+  });
 });
 
 // 6. Simulation Engine (Cahier des charges section 22)

@@ -133,11 +133,11 @@ cat << 'README_EOF' > /opt/ndm-teams-manager/README.md
 
 * **Tenant ID :** `55b01275-e53b-4146-94a3-cb58e71ec7bf`
 * **Client ID :** `1b4e3135-da49-4e36-9d17-d15d3ab497d3`
-* **Client Secret :** `32d738c4-8b87-4936-b0a5-68bf349773df` (sécurisé côté serveur)
-* **Procédure de validation sur Azure Portal (Erreur AADSTS700016) :**
-  1. Rendez-vous sur portal.azure.com > Microsoft Entra ID > Inscriptions d'applications.
-  2. Sélectionnez l'application (Client ID: 1b4e3135-d949-4e36-9d17-d15d3ab49743).
-  3. Allez dans 'Autorisations de l’API' et cliquez sur 'Accorder un consentement d’administrateur'.
+* **Client Secret :** `ktx8Q~v7mEzWEPGdaKKdineLMn9mTuYsolA_CarH` (sécurisé côté serveur)
+* **Effectifs réels (2026-2027) :** 1 174 élèves actifs répartis dans les 37 classes (28 à 38 par classe)
+* **Corps professoral :** 117 professeurs réels Entra ID
+* **Grille officielle :** 565 équipes pré-configurées avec affectations UnDeuxTEMPS / Axess
+* **Multi-Propriétaires & Co-propriété :** Prise en charge de plusieurs enseignants par équipe + co-propriété automatique pour `mjoubin@notredamedesmissions.com` et les administrateurs Office 365
 
 ---
 

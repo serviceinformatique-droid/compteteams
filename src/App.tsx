@@ -234,6 +234,95 @@ export default function App() {
     }
   };
 
+  const handleGenerateCatalog = async () => {
+    try {
+      const res = await api.generateTeamsCatalog();
+      if (res.success) {
+        showToast(res.message, 'success');
+        await loadData();
+      }
+    } catch (err) {
+      showToast('Erreur génération catalogue équipes', 'error');
+    }
+  };
+
+  const handleApplyOfficialAssignments = async () => {
+    setIsSyncing(true);
+    try {
+      const res = await api.applyOfficialAssignments();
+      if (res.success) {
+        showToast(res.message, 'success');
+        await loadData();
+      } else {
+        showToast('Erreur application des affectations officielles', 'error');
+      }
+    } catch (err) {
+      showToast('Erreur application affectations officielles', 'error');
+    } finally {
+      setIsSyncing(false);
+    }
+  };
+
+  const handleAssignTeacher = async (teamId: string, teacherIds: string[]) => {
+    try {
+      const res = await api.assignTeacherToTeam(teamId, teacherIds);
+      if (res.success) {
+        showToast('Enseignant(s) assigné(s) avec succès à l\'équipe', 'success');
+        await loadData();
+      }
+    } catch (err) {
+      showToast('Erreur assignation enseignant', 'error');
+    }
+  };
+
+  const handleBulkAddAdminOwners = async (adminEmails?: string[], teamIds?: string[]) => {
+    setIsSyncing(true);
+    try {
+      const res = await api.bulkAddAdminOwners(adminEmails, teamIds);
+      if (res.success) {
+        showToast(res.message, 'success');
+        await loadData();
+      } else {
+        showToast(res.error || 'Erreur ajout des administrateurs', 'error');
+      }
+    } catch (err) {
+      showToast('Erreur ajout co-propriété administrateurs', 'error');
+    } finally {
+      setIsSyncing(false);
+    }
+  };
+
+  const handleProvisionTeam = async (teamId: string) => {
+    setIsSyncing(true);
+    try {
+      const res = await api.provisionTeamM365(teamId);
+      if (res.success) {
+        showToast(res.message || 'Équipe créée avec succès sur Microsoft Teams !', 'success');
+        await loadData();
+      } else {
+        showToast(res.error || 'Erreur création Teams', 'error');
+      }
+    } catch (err: any) {
+      showToast('Erreur communication Microsoft Graph', 'error');
+    } finally {
+      setIsSyncing(false);
+    }
+  };
+
+  const handleImportAssignmentsCsv = async (csvContent: string) => {
+    try {
+      const res = await api.importTeacherAssignmentsCsv(csvContent);
+      if (res.success) {
+        showToast(res.message, 'success');
+        await loadData();
+      } else {
+        showToast(res.error || 'Erreur import affectations', 'error');
+      }
+    } catch (err) {
+      showToast('Erreur traitement fichier affectations', 'error');
+    }
+  };
+
   // Classes Handlers
   const handleAddClass = async (classData: Partial<ClassItem>) => {
     try {
@@ -483,8 +572,15 @@ export default function App() {
               <TeamsTab
                 teams={teams}
                 classes={classes}
+                users={users}
                 onSyncTeam={handleSyncTeam}
                 onUpdateTeam={handleUpdateTeam}
+                onGenerateCatalog={handleGenerateCatalog}
+                onApplyOfficialAssignments={handleApplyOfficialAssignments}
+                onAssignTeacher={handleAssignTeacher}
+                onBulkAddAdminOwners={handleBulkAddAdminOwners}
+                onProvisionTeam={handleProvisionTeam}
+                onImportAssignmentsCsv={handleImportAssignmentsCsv}
                 isSyncing={isSyncing}
               />
             )}

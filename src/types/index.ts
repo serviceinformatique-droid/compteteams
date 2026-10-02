@@ -43,7 +43,9 @@ export interface UserItem {
   specialties?: string[]; // IDs or codes of selected subjects
   options?: string[]; // e.g. Latin, Grec, LCE
   teachingSubjects?: { classCode: string; subjectName: string }[];
-  status: 'active' | 'inactive' | 'pending' | 'anomaly';
+  officeLocation?: string;
+  department?: string;
+  status: 'active' | 'inactive' | 'pending' | 'anomaly' | 'archived';
   anomalyNote?: string;
   lastSeen?: string;
 }
@@ -58,6 +60,8 @@ export interface TeamItem {
   schoolYear: string;
   memberCount: number;
   teacherCount: number;
+  assignedTeacherIds?: string[];
+  assignedTeachers?: { id: string; name: string; email: string }[];
   status: 'synced' | 'pending' | 'error' | 'archived';
   autoManaged: boolean; // Protect manual teams: OUI / NON
   isClassTeam: boolean; // Education Class Template vs Standard
