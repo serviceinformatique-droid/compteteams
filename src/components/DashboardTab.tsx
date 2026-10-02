@@ -100,10 +100,10 @@ export const DashboardTab: React.FC<DashboardTabProps> = ({
             </div>
           </div>
           <div className="mt-2 text-2xl font-bold text-white tracking-tight">
-            {stats?.studentsCount?.toLocaleString('fr-FR') || '1 250'}
+            {stats?.studentsCount ?? 0}
           </div>
           <div className="text-[11px] text-slate-400 mt-1 flex items-center gap-1">
-            <span className="text-emerald-400 font-medium">100% Entra ID</span> • Aucun doublon
+            <span className="text-emerald-400 font-medium">100% Entra ID</span> • {stats?.studentsCount > 0 ? 'Synchronisés' : 'Aucun compte démo'}
           </div>
         </div>
 
@@ -119,10 +119,10 @@ export const DashboardTab: React.FC<DashboardTabProps> = ({
             </div>
           </div>
           <div className="mt-2 text-2xl font-bold text-white tracking-tight">
-            {stats?.teachersCount || 145}
+            {stats?.teachersCount ?? 0}
           </div>
           <div className="text-[11px] text-slate-400 mt-1">
-            Propriétaires équipes Class
+            {stats?.teachersCount > 0 ? 'Propriétaires équipes Class' : 'Source Microsoft 365'}
           </div>
         </div>
 
@@ -157,10 +157,10 @@ export const DashboardTab: React.FC<DashboardTabProps> = ({
             </div>
           </div>
           <div className="mt-2 text-2xl font-bold text-white tracking-tight">
-            {stats?.teamsCount || 412}
+            {stats?.teamsCount ?? 0}
           </div>
           <div className="text-[11px] text-slate-400 mt-1">
-            394 synchronisées • 18 manuelles
+            {stats?.teamsCount > 0 ? `${stats.teamsCount} équipes Teams` : 'Prêt pour création auto'}
           </div>
         </div>
 

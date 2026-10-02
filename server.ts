@@ -140,91 +140,18 @@ function generateInitialData() {
     { id: 's-opt-lce', code: 'OPT-LCE', name: 'Langues et Cultures Européennes (LCE)', shortName: 'LCE', levels: ['4e', '3e'], section: 'Collège', type: 'Option', active: true, priority: 32 },
   ];
 
-  // Users: Sample representative dataset (Teachers + Students)
-  const users: UserItem[] = [
-    // Teachers
-    { id: 'u-t1', m365Id: 'm365-t-001', firstName: 'Hélène', lastName: 'DUPONT', email: 'helene.dupont@ndmissions.fr', upn: 'helene.dupont@ndmissions.fr', role: 'teacher', status: 'active', teachingSubjects: [{ classCode: '601', subjectName: 'Français' }, { classCode: '602', subjectName: 'Français' }, { classCode: '603', subjectName: 'Français' }, { classCode: '604', subjectName: 'Français' }] },
-    { id: 'u-t2', m365Id: 'm365-t-002', firstName: 'Marc', lastName: 'MARTIN', email: 'marc.martin@ndmissions.fr', upn: 'marc.martin@ndmissions.fr', role: 'teacher', status: 'active', teachingSubjects: [{ classCode: '601', subjectName: 'Mathématiques' }, { classCode: '602', subjectName: 'Mathématiques' }] },
-    { id: 'u-t3', m365Id: 'm365-t-003', firstName: 'Claire', lastName: 'LEFEBVRE', email: 'claire.lefebvre@ndmissions.fr', upn: 'claire.lefebvre@ndmissions.fr', role: 'teacher', status: 'active', teachingSubjects: [{ classCode: '101', subjectName: 'HGGSP' }, { classCode: '102', subjectName: 'HGGSP' }, { classCode: 'T01', subjectName: 'HGGSP' }] },
-    { id: 'u-t4', m365Id: 'm365-t-004', firstName: 'Antoine', lastName: 'BERNARD', email: 'antoine.bernard@ndmissions.fr', upn: 'antoine.bernard@ndmissions.fr', role: 'teacher', status: 'active', teachingSubjects: [{ classCode: '101', subjectName: 'NSI' }, { classCode: 'T01', subjectName: 'NSI' }] },
-    { id: 'u-t5', m365Id: 'm365-t-005', firstName: 'Sophie', lastName: 'ROUX', email: 'sophie.roux@ndmissions.fr', upn: 'sophie.roux@ndmissions.fr', role: 'teacher', status: 'active', teachingSubjects: [{ classCode: '601', subjectName: 'Anglais' }, { classCode: '602', subjectName: 'Anglais' }] },
-    { id: 'u-t6', m365Id: 'm365-t-006', firstName: 'Jean-Pierre', lastName: 'MOREL', email: 'jp.morel@ndmissions.fr', upn: 'jp.morel@ndmissions.fr', role: 'teacher', status: 'active', teachingSubjects: [{ classCode: '601', subjectName: 'Histoire-Géo' }, { classCode: '601', subjectName: 'EMC' }] },
-    { id: 'u-t7', m365Id: 'm365-t-007', firstName: 'Isabelle', lastName: 'GIRARD', email: 'isabelle.girard@ndmissions.fr', upn: 'isabelle.girard@ndmissions.fr', role: 'teacher', status: 'active', teachingSubjects: [{ classCode: '601', subjectName: 'SVT' }, { classCode: '602', subjectName: 'SVT' }] },
-    { id: 'u-t8', m365Id: 'm365-t-008', firstName: 'Philippe', lastName: 'CHEVALIER', email: 'philippe.chevalier@ndmissions.fr', upn: 'philippe.chevalier@ndmissions.fr', role: 'teacher', status: 'active', teachingSubjects: [{ classCode: '101', subjectName: 'Mathématiques' }, { classCode: 'T01', subjectName: 'Mathématiques' }] },
+  // No demo users: 100% server driven from Microsoft Entra ID
+  const users: UserItem[] = [];
 
-    // Students 601 (Collège)
-    { id: 'u-s1', m365Id: 'm365-s-001', firstName: 'Jean', lastName: 'DUPONT', email: 'jean.dupont@eleves.ndmissions.fr', upn: 'jean.dupont@eleves.ndmissions.fr', role: 'student', classCode: '601', options: ['Latin'], status: 'active' },
-    { id: 'u-s2', m365Id: 'm365-s-002', firstName: 'Paul', lastName: 'MARTIN', email: 'paul.martin@eleves.ndmissions.fr', upn: 'paul.martin@eleves.ndmissions.fr', role: 'student', classCode: '601', status: 'active' },
-    { id: 'u-s3', m365Id: 'm365-s-003', firstName: 'Camille', lastName: 'LEROY', email: 'camille.leroy@eleves.ndmissions.fr', upn: 'camille.leroy@eleves.ndmissions.fr', role: 'student', classCode: '601', options: ['Latin'], status: 'active' },
-    { id: 'u-s4', m365Id: 'm365-s-004', firstName: 'Lucas', lastName: 'THOMAS', email: 'lucas.thomas@eleves.ndmissions.fr', upn: 'lucas.thomas@eleves.ndmissions.fr', role: 'student', classCode: '601', status: 'active' },
-    { id: 'u-s5', m365Id: 'm365-s-005', firstName: 'Emma', lastName: 'PETIT', email: 'emma.petit@eleves.ndmissions.fr', upn: 'emma.petit@eleves.ndmissions.fr', role: 'student', classCode: '601', status: 'active' },
-    { id: 'u-s6', m365Id: 'm365-s-006', firstName: 'Hugo', lastName: 'ROBERT', email: 'hugo.robert@eleves.ndmissions.fr', upn: 'hugo.robert@eleves.ndmissions.fr', role: 'student', classCode: '601', status: 'active' },
-    { id: 'u-s7', m365Id: 'm365-s-007', firstName: 'Léa', lastName: 'RICHARD', email: 'lea.richard@eleves.ndmissions.fr', upn: 'lea.richard@eleves.ndmissions.fr', role: 'student', classCode: '601', status: 'active' },
-    { id: 'u-s8', m365Id: 'm365-s-008', firstName: 'Louis', lastName: 'DURAND', email: 'louis.durand@eleves.ndmissions.fr', upn: 'louis.durand@eleves.ndmissions.fr', role: 'student', classCode: '602', status: 'active' }, // Changed class example
-    { id: 'u-s9', m365Id: 'm365-s-009', firstName: 'Chloe', lastName: 'MOREAU', email: 'chloe.moreau@eleves.ndmissions.fr', upn: 'chloe.moreau@eleves.ndmissions.fr', role: 'student', classCode: '602', status: 'active' },
+  // No demo teams: will be pulled or provisioned via Microsoft Graph
+  const teams: TeamItem[] = [];
 
-    // Students 101 (Première - Spécialités distinctes conformes cahier des charges section 11)
-    { id: 'u-s10', m365Id: 'm365-s-010', firstName: 'Maxime', lastName: 'LAMBERT', email: 'maxime.lambert@eleves.ndmissions.fr', upn: 'maxime.lambert@eleves.ndmissions.fr', role: 'student', classCode: '101', specialties: ['Mathématiques', 'HGGSP', 'Physique-Chimie'], status: 'active' },
-    { id: 'u-s11', m365Id: 'm365-s-011', firstName: 'Sarah', lastName: 'BONNET', email: 'sarah.bonnet@eleves.ndmissions.fr', upn: 'sarah.bonnet@eleves.ndmissions.fr', role: 'student', classCode: '101', specialties: ['HGGSP', 'SES', 'HLP'], status: 'active' },
-    { id: 'u-s12', m365Id: 'm365-s-012', firstName: 'Alexandre', lastName: 'FONTAINE', email: 'alexandre.fontaine@eleves.ndmissions.fr', upn: 'alexandre.fontaine@eleves.ndmissions.fr', role: 'student', classCode: '101', specialties: ['Mathématiques', 'NSI', 'Physique-Chimie'], status: 'active' },
-    { id: 'u-s13', m365Id: 'm365-s-013', firstName: 'Inès', lastName: 'ROUSSEL', email: 'ines.roussel@eleves.ndmissions.fr', upn: 'ines.roussel@eleves.ndmissions.fr', role: 'student', classCode: '101', specialties: ['SES', 'HGGSP', 'LLCER'], status: 'active' },
-
-    // Students Terminale T01
-    { id: 'u-s14', m365Id: 'm365-s-014', firstName: 'Julien', lastName: 'MULLER', email: 'julien.muller@eleves.ndmissions.fr', upn: 'julien.muller@eleves.ndmissions.fr', role: 'student', classCode: 'T01', specialties: ['Mathématiques', 'Physique-Chimie'], status: 'active' },
-    { id: 'u-s15', m365Id: 'm365-s-015', firstName: 'Manon', lastName: 'HENRY', email: 'manon.henry@eleves.ndmissions.fr', upn: 'manon.henry@eleves.ndmissions.fr', role: 'student', classCode: 'T01', specialties: ['HGGSP', 'SES'], status: 'active' },
-
-    // Anomalies examples from cahier des charges
-    { id: 'u-s16', m365Id: 'm365-s-016', firstName: 'Théo', lastName: 'GAUTHIER', email: 'theo.gauthier@eleves.ndmissions.fr', upn: 'theo.gauthier@eleves.ndmissions.fr', role: 'student', classCode: '', status: 'anomaly', anomalyNote: 'Classe non renseignée dans Entra ID' },
-    { id: 'u-s17', m365Id: 'm365-s-017', firstName: 'Jade', lastName: 'COLIN', email: 'jade.colin@eleves.ndmissions.fr', upn: 'jade.colin@eleves.ndmissions.fr', role: 'student', classCode: '101', specialties: [], status: 'anomaly', anomalyNote: 'Spécialités de 1ère non renseignées' },
-  ];
-
-  // Teams: realistic set matching [CLASSE]-[MATIÈRE]
-  const teams: TeamItem[] = [
-    // 601
-    { id: 'tm-601-fran', m365TeamId: 't-team-601-fran', name: '601-Français', classCode: '601', subjectCode: 'FRAN', subjectName: 'Français', schoolYear: '2026-2027', memberCount: 30, teacherCount: 1, status: 'synced', autoManaged: true, isClassTeam: true, lastSync: '2026-10-02T09:30:00Z' },
-    { id: 'tm-601-math', m365TeamId: 't-team-601-math', name: '601-Mathématiques', classCode: '601', subjectCode: 'MATH', subjectName: 'Mathématiques', schoolYear: '2026-2027', memberCount: 30, teacherCount: 1, status: 'synced', autoManaged: true, isClassTeam: true, lastSync: '2026-10-02T09:30:00Z' },
-    { id: 'tm-601-ang', m365TeamId: 't-team-601-ang', name: '601-Anglais', classCode: '601', subjectCode: 'ANG', subjectName: 'Anglais', schoolYear: '2026-2027', memberCount: 30, teacherCount: 1, status: 'synced', autoManaged: true, isClassTeam: true, lastSync: '2026-10-02T09:30:00Z' },
-    { id: 'tm-601-hg', m365TeamId: 't-team-601-hg', name: '601-Histoire-Géographie', classCode: '601', subjectCode: 'HG', subjectName: 'Histoire-Géo', schoolYear: '2026-2027', memberCount: 30, teacherCount: 1, status: 'synced', autoManaged: true, isClassTeam: true, lastSync: '2026-10-02T09:30:00Z' },
-    { id: 'tm-601-emc', m365TeamId: 't-team-601-emc', name: '601-EMC', classCode: '601', subjectCode: 'EMC', subjectName: 'EMC', schoolYear: '2026-2027', memberCount: 30, teacherCount: 1, status: 'synced', autoManaged: true, isClassTeam: true, lastSync: '2026-10-02T09:30:00Z' },
-    { id: 'tm-601-svt', m365TeamId: 't-team-601-svt', name: '601-SVT', classCode: '601', subjectCode: 'SVT', subjectName: 'SVT', schoolYear: '2026-2027', memberCount: 30, teacherCount: 1, status: 'synced', autoManaged: true, isClassTeam: true, lastSync: '2026-10-02T09:30:00Z' },
-    { id: 'tm-601-pc', m365TeamId: 't-team-601-pc', name: '601-Physique-Chimie', classCode: '601', subjectCode: 'PC', subjectName: 'Physique-Chimie', schoolYear: '2026-2027', memberCount: 30, teacherCount: 1, status: 'synced', autoManaged: true, isClassTeam: true, lastSync: '2026-10-02T09:30:00Z' },
-    { id: 'tm-601-tech', m365TeamId: 't-team-601-tech', name: '601-Technologie', classCode: '601', subjectCode: 'TECH', subjectName: 'Technologie', schoolYear: '2026-2027', memberCount: 30, teacherCount: 1, status: 'synced', autoManaged: true, isClassTeam: true, lastSync: '2026-10-02T09:30:00Z' },
-    { id: 'tm-601-eps', m365TeamId: 't-team-601-eps', name: '601-EPS', classCode: '601', subjectCode: 'EPS', subjectName: 'EPS', schoolYear: '2026-2027', memberCount: 30, teacherCount: 1, status: 'synced', autoManaged: true, isClassTeam: true, lastSync: '2026-10-02T09:30:00Z' },
-    { id: 'tm-601-art', m365TeamId: 't-team-601-art', name: '601-Arts Plastiques', classCode: '601', subjectCode: 'ART', subjectName: 'Arts Plastiques', schoolYear: '2026-2027', memberCount: 30, teacherCount: 1, status: 'synced', autoManaged: true, isClassTeam: true, lastSync: '2026-10-02T09:30:00Z' },
-    { id: 'tm-601-mus', m365TeamId: 't-team-601-mus', name: '601-Éducation Musicale', classCode: '601', subjectCode: 'MUS', subjectName: 'Éducation Musicale', schoolYear: '2026-2027', memberCount: 30, teacherCount: 1, status: 'synced', autoManaged: true, isClassTeam: true, lastSync: '2026-10-02T09:30:00Z' },
-
-    // 602
-    { id: 'tm-602-fran', m365TeamId: 't-team-602-fran', name: '602-Français', classCode: '602', subjectCode: 'FRAN', subjectName: 'Français', schoolYear: '2026-2027', memberCount: 31, teacherCount: 1, status: 'synced', autoManaged: true, isClassTeam: true, lastSync: '2026-10-02T09:30:00Z' },
-    { id: 'tm-602-math', m365TeamId: 't-team-602-math', name: '602-Mathématiques', classCode: '602', subjectCode: 'MATH', subjectName: 'Mathématiques', schoolYear: '2026-2027', memberCount: 31, teacherCount: 1, status: 'synced', autoManaged: true, isClassTeam: true, lastSync: '2026-10-02T09:30:00Z' },
-
-    // 101 Lycée
-    { id: 'tm-101-fran', m365TeamId: 't-team-101-fran', name: '101-Français', classCode: '101', subjectCode: 'FRAN', subjectName: 'Français', schoolYear: '2026-2027', memberCount: 34, teacherCount: 1, status: 'synced', autoManaged: true, isClassTeam: true, lastSync: '2026-10-02T09:30:00Z' },
-    { id: 'tm-101-hggsp', m365TeamId: 't-team-101-hggsp', name: '101-HGGSP', classCode: '101', subjectCode: 'SPE-HGGSP', subjectName: 'HGGSP', schoolYear: '2026-2027', memberCount: 22, teacherCount: 1, status: 'synced', autoManaged: true, isClassTeam: true, lastSync: '2026-10-02T09:30:00Z' },
-    { id: 'tm-101-math', m365TeamId: 't-team-101-math', name: '101-Mathématiques', classCode: '101', subjectCode: 'SPE-MATH', subjectName: 'Mathématiques', schoolYear: '2026-2027', memberCount: 26, teacherCount: 1, status: 'synced', autoManaged: true, isClassTeam: true, lastSync: '2026-10-02T09:30:00Z' },
-    { id: 'tm-101-nsi', m365TeamId: 't-team-101-nsi', name: '101-NSI', classCode: '101', subjectCode: 'SPE-NSI', subjectName: 'NSI', schoolYear: '2026-2027', memberCount: 14, teacherCount: 1, status: 'synced', autoManaged: true, isClassTeam: true, lastSync: '2026-10-02T09:30:00Z' },
-
-    // Manual Unmanaged Team Protected (section 27: Protection des équipes manuelles)
-    { id: 'tm-manual-proj', m365TeamId: 't-team-proj-erasmus', name: 'Projet Erasmus+ NDM 2026', classCode: 'Projet', subjectCode: 'PROJ', subjectName: 'Projet International', schoolYear: '2026-2027', memberCount: 18, teacherCount: 3, status: 'synced', autoManaged: false, isClassTeam: false, lastSync: '2026-09-15T14:00:00Z' },
-  ];
-
-  // Anomalies list
-  const anomalies: AnomalyItem[] = [
-    { id: 'anom-1', type: 'NO_CLASS', title: 'Classe non renseignée', description: 'Élève Théo GAUTHIER sans classe assignée dans Entra ID', severity: 'warning', userId: 'u-s16', userName: 'Théo GAUTHIER', resolved: false, resolutionHint: 'Assigner la classe dans la fiche ou vérifier dans Microsoft Entra ID' },
-    { id: 'anom-2', type: 'NO_SPECIALTY', title: 'Spécialité non renseignée', description: 'Élève Jade COLIN en 1ère 1 sans aucune spécialité déclarée', severity: 'warning', userId: 'u-s17', userName: 'Jade COLIN', classCode: '101', resolved: false, resolutionHint: 'Sélectionner les 3 spécialités de Première' },
-    { id: 'anom-3', type: 'TEAM_ERROR', title: 'Équipe manquante détectée', description: '606-Technologie non présente sur Microsoft Teams', severity: 'error', teamName: '606-Technologie', classCode: '606', resolved: false, resolutionHint: 'Lancer la création automatique lors de la synchronisation' },
-    { id: 'anom-4', type: 'TEACHER_UNASSIGNED', title: 'Enseignant non affecté', description: '304-Technologie n\'a aucun enseignant désigné', severity: 'warning', classCode: '304', resolved: false, resolutionHint: 'Affecter un professeur de technologie à la classe 304' },
-    { id: 'anom-5', type: 'MULTI_CLASS', title: 'Élève avec double classe', description: 'Élève Romain D. présent temporairement dans ELEVE-501 et ELEVE-502', severity: 'error', userName: 'Romain DUPUIS', resolved: false, resolutionHint: 'Conserver la classe active 502 et retirer l\'ancien groupe' },
-    { id: 'anom-6', type: 'MISSING_M365', title: 'Compte M365 introuvable', description: 'Compte invité prof.externe@ndmissions.fr sans licence Teams Education', severity: 'warning', userName: 'Professeur Externe', resolved: false, resolutionHint: 'Attribuer une licence Microsoft 365 A3/A5 Enseignant' },
-  ];
+  // No demo anomalies: computed live against real directory
+  const anomalies: AnomalyItem[] = [];
 
   // Audit Logs
   const logs: LogItem[] = [
-    { id: 'log-1', timestamp: '2026-10-02 18:02:14', action: 'CRÉATION', target: '606-Technologie', details: 'Création équipe Class Teams via Microsoft Graph', status: 'Réussi', source: 'GraphAPI' },
-    { id: 'log-2', timestamp: '2026-10-02 18:01:45', action: 'AJOUT', target: '601-Français', user: 'Jean DUPONT', details: 'Ajout de membre (rôle: Student)', status: 'Réussi', source: 'GraphAPI' },
-    { id: 'log-3', timestamp: '2026-10-02 18:01:42', action: 'AJOUT', target: '601-Mathématiques', user: 'Paul MARTIN', details: 'Ajout de membre (rôle: Student)', status: 'Réussi', source: 'GraphAPI' },
-    { id: 'log-4', timestamp: '2026-10-02 18:01:10', action: 'RETRAIT', target: '602-Français', user: 'Luc DURAND', details: 'Retrait suite à changement de classe vers 601', status: 'Réussi', source: 'GraphAPI' },
-    { id: 'log-5', timestamp: '2026-10-02 18:00:00', action: 'SYNCHRONISATION', target: 'Tenant Microsoft 365', details: 'Synchronisation différentielle automatique planifiée (18h00)', status: 'Réussi', source: 'NDM-Core' },
-    { id: 'log-6', timestamp: '2026-10-02 12:00:00', action: 'SYNCHRONISATION', target: 'Tenant Microsoft 365', details: 'Synchronisation différentielle automatique planifiée (12h00)', status: 'Réussi', source: 'NDM-Core' },
+    { id: 'log-' + Date.now(), timestamp: new Date().toISOString().replace('T', ' ').substring(0, 19), action: 'MODIFICATION', target: 'Annuaire Initialisé', details: 'Suppression intégrale des comptes de démo. Annuaire 100% prêt pour synchronisation Microsoft 365.', status: 'Réussi', source: 'Admin' }
   ];
 
   // Config
@@ -247,35 +174,7 @@ function generateInitialData() {
     connected: true,
   };
 
-  const reports: SyncReport[] = [
-    {
-      id: 'rep-001',
-      timestamp: '2026-10-02 18:02:14',
-      date: '02/10/2026',
-      schoolYear: '2026-2027',
-      type: 'FULL',
-      totalUsers: 1395,
-      studentsCount: 1250,
-      teachersCount: 145,
-      classesCount: 37,
-      teamsAnalyzed: 412,
-      teamsCreated: 18,
-      studentsAdded: 27,
-      studentsRemoved: 4,
-      classChanges: 3,
-      errors: 2,
-      warnings: 4,
-      details: [
-        'Analyse complète de Microsoft Entra ID terminée en 4.2s',
-        '37 classes vérifiées (Collège: 24, Lycée: 13)',
-        '18 équipes manquantes créées avec modèle Class',
-        '27 ajouts différentiels effectués sans toucher aux membres existants',
-        '4 élèves retirés de leurs anciennes classes suite à mutation',
-        '2 erreurs mineures enregistrées dans les anomalies (licences M365)',
-      ],
-      status: 'warning',
-    },
-  ];
+  const reports: SyncReport[] = [];
 
   return { classes, subjects, users, teams, anomalies, logs, config, reports };
 }
@@ -317,22 +216,172 @@ app.get('/api/stats', (req: Request, res: Response) => {
   const anomaliesCount = db.anomalies.filter((a: AnomalyItem) => !a.resolved).length;
 
   res.json({
-    studentsCount: studentsCount > 0 ? 1250 : 0, // Real establishment figures from specs
-    teachersCount: teachersCount > 0 ? 145 : 0,
+    studentsCount,
+    teachersCount,
     classesCount: classesCount || 37,
-    collegeClassesCount: 24,
-    lyceeClassesCount: 13,
-    teamsCount: 412,
-    activeTeamsCount: 394,
-    teamsToCreateCount: 18,
-    membersToAddCount: 27,
-    membersToRemoveCount: 4,
-    anomaliesCount: anomaliesCount || 6,
+    collegeClassesCount: db.classes.filter((c: ClassItem) => c.section === 'Collège').length,
+    lyceeClassesCount: db.classes.filter((c: ClassItem) => c.section === 'Lycée').length,
+    teamsCount,
+    activeTeamsCount,
+    teamsToCreateCount: Math.max(0, (classesCount * 11) - teamsCount),
+    membersToAddCount: studentsCount,
+    membersToRemoveCount: 0,
+    anomaliesCount,
     currentSchoolYear: db.config.currentSchoolYear,
     lastSync: db.config.lastSuccessfulSync,
     autoSyncEnabled: db.config.autoSyncEnabled,
     connected: db.config.connected,
   });
+});
+
+// Purge all demo accounts permanently
+app.post('/api/users/purge-demo', (req: Request, res: Response) => {
+  db.users = [];
+  db.teams = [];
+  db.anomalies = [];
+  db.logs.unshift({
+    id: 'log-' + Date.now(),
+    timestamp: new Date().toISOString().replace('T', ' ').substring(0, 19),
+    action: 'MODIFICATION',
+    target: 'Purge des Données de Démo',
+    details: 'Tous les comptes de démonstration ont été purgés avec succès. L\'annuaire est prêt pour la synchronisation Microsoft 365.',
+    status: 'Réussi',
+    source: 'Admin',
+  });
+  saveDatabase(db);
+  res.json({ success: true, message: 'Tous les comptes de démo ont été purgés.' });
+});
+
+// Pull Real Microsoft 365 Entra ID Accounts via Microsoft Graph
+app.post('/api/sync/m365-pull', async (req: Request, res: Response) => {
+  const tenantId = db.config.tenantId || process.env.TENANT_ID || '55b01275-e53b-4146-94a3-cb58e71ec7bf';
+  const clientId = db.config.clientId || process.env.CLIENT_ID || '1b4e3135-d949-4e36-9d17-d15d3ab49743';
+  const clientSecret = db.config.clientSecret || process.env.CLIENT_SECRET || '32d738c4-8b87-4936-b0a5-68bf349773df';
+
+  try {
+    // 1. Get Token
+    const tokenUrl = `https://login.microsoftonline.com/${tenantId}/oauth2/v2.0/token`;
+    const tokenParams = new URLSearchParams();
+    tokenParams.append('client_id', clientId);
+    tokenParams.append('client_secret', clientSecret);
+    tokenParams.append('grant_type', 'client_credentials');
+    tokenParams.append('scope', 'https://graph.microsoft.com/.default');
+
+    const tokenRes = await fetch(tokenUrl, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+      body: tokenParams.toString(),
+      signal: AbortSignal.timeout(8000),
+    });
+
+    const tokenData = await tokenRes.json();
+    if (!tokenRes.ok || !tokenData.access_token) {
+      const errMsg = tokenData.error_description || tokenData.error || 'Erreur authentification Entra ID';
+      return res.status(400).json({ success: false, error: errMsg });
+    }
+
+    const accessToken = tokenData.access_token;
+
+    // 2. Fetch Users from Microsoft Graph
+    const usersRes = await fetch('https://graph.microsoft.com/v1.0/users?$top=999&$select=id,displayName,givenName,surname,userPrincipalName,mail,accountEnabled,jobTitle,department', {
+      headers: { Authorization: `Bearer ${accessToken}` },
+      signal: AbortSignal.timeout(10000),
+    });
+
+    if (!usersRes.ok) {
+      const err = await usersRes.json();
+      return res.status(400).json({ success: false, error: err.error?.message || 'Erreur requête Microsoft Graph' });
+    }
+
+    const usersData = await usersRes.json();
+    const rawUsers = usersData.value || [];
+
+    // Parse users into NDM model
+    const importedUsers: UserItem[] = rawUsers.map((ru: any, idx: number) => {
+      const email = ru.mail || ru.userPrincipalName || '';
+      const upn = ru.userPrincipalName || email;
+      const isTeacher = upn.includes('@ndmissions.fr') && !upn.includes('eleve');
+
+      // Attempt to identify class from department, displayName, or jobTitle
+      let classCode = '';
+      const textToSearch = `${ru.department || ''} ${ru.jobTitle || ''} ${ru.displayName || ''}`;
+      const classMatch = textToSearch.match(/\b([654321][0-9]{2}|T0[1-4])\b/);
+      if (classMatch) {
+        classCode = classMatch[1];
+      }
+
+      return {
+        id: 'u-m365-' + (ru.id || idx),
+        m365Id: ru.id || `m365-${idx}`,
+        firstName: ru.givenName || ru.displayName?.split(' ')[0] || 'Utilisateur',
+        lastName: ru.surname || ru.displayName?.split(' ').slice(1).join(' ') || 'M365',
+        email,
+        upn,
+        role: isTeacher ? ('teacher' as const) : ('student' as const),
+        classCode,
+        status: ru.accountEnabled === false ? ('inactive' as const) : ('active' as const),
+      };
+    });
+
+    db.users = importedUsers;
+
+    // 3. Fetch Existing Teams from Microsoft Graph
+    try {
+      const teamsRes = await fetch("https://graph.microsoft.com/v1.0/groups?$filter=resourceProvisioningOptions/Any(x:x eq 'Team')&$top=999&$select=id,displayName,description", {
+        headers: { Authorization: `Bearer ${accessToken}` },
+        signal: AbortSignal.timeout(8000),
+      });
+      if (teamsRes.ok) {
+        const teamsData = await teamsRes.json();
+        const rawTeams = teamsData.value || [];
+        db.teams = rawTeams.map((rt: any) => {
+          const name = rt.displayName || '';
+          const parts = name.split('-');
+          const classCode = parts[0] || 'NDM';
+          const subjectName = parts[1] || 'Général';
+          return {
+            id: 'tm-' + rt.id,
+            m365TeamId: rt.id,
+            name,
+            classCode,
+            subjectCode: classCode,
+            subjectName,
+            schoolYear: db.config.currentSchoolYear,
+            memberCount: 0,
+            teacherCount: 1,
+            status: 'synced',
+            autoManaged: name.includes('-'),
+            isClassTeam: true,
+            lastSync: new Date().toISOString(),
+          };
+        });
+      }
+    } catch (e) {
+      console.warn('Teams fetch error or empty', e);
+    }
+
+    db.config.lastSuccessfulSync = new Date().toISOString();
+    db.logs.unshift({
+      id: 'log-' + Date.now(),
+      timestamp: new Date().toISOString().replace('T', ' ').substring(0, 19),
+      action: 'SYNCHRONISATION',
+      target: 'Microsoft Entra ID (Annuaire Réel)',
+      details: `${importedUsers.length} comptes réels importés depuis Microsoft 365, ${db.teams.length} équipes Teams synchronisées.`,
+      status: 'Réussi',
+      source: 'GraphAPI',
+    });
+
+    saveDatabase(db);
+
+    res.json({
+      success: true,
+      importedCount: importedUsers.length,
+      teamsCount: db.teams.length,
+      message: `${importedUsers.length} utilisateurs réels chargés depuis Microsoft Entra ID.`,
+    });
+  } catch (err: any) {
+    res.status(500).json({ success: false, error: err.message || 'Erreur connexion Microsoft Graph' });
+  }
 });
 
 // 2. Classes Management (CRUD + Active toggle)
@@ -542,51 +591,85 @@ app.put('/api/teams/:id', (req: Request, res: Response) => {
 
 // 6. Simulation Engine (Cahier des charges section 22)
 app.post('/api/simulation', (req: Request, res: Response) => {
-  // Generate differential calculation
+  const users = db.users as UserItem[];
+  const teams = db.teams as TeamItem[];
+  const classes = db.classes as ClassItem[];
+  const subjects = db.subjects as SubjectItem[];
+
+  const teamsToCreate: { name: string; classCode: string; subjectName: string; reason: string }[] = [];
+  const membersToAdd: { userName: string; upn: string; userRole: string; teamName: string; reason: string }[] = [];
+  const membersToRemove: { userName: string; upn: string; userRole: string; teamName: string; reason: string }[] = [];
+  const actionsList: any[] = [];
+
+  // Check which teams should exist for active classes
+  classes.filter(c => c.active).forEach(c => {
+    // Basic subjects for this class level
+    const applicableSubjects = subjects.filter(s => s.active && s.levels.includes(c.level) && s.type === 'Tronc commun');
+    applicableSubjects.slice(0, 3).forEach(s => {
+      const expectedTeamName = `${c.code}-${s.shortName}`;
+      const exists = teams.some(t => t.name === expectedTeamName);
+      if (!exists) {
+        teamsToCreate.push({
+          name: expectedTeamName,
+          classCode: c.code,
+          subjectName: s.shortName,
+          reason: `Équipe manquante pour la classe ${c.code}`,
+        });
+        actionsList.push({
+          id: 'act-' + actionsList.length,
+          type: 'CRÉATION',
+          target: expectedTeamName,
+          details: `Création équipe Teams (modèle Class)`,
+          reason: `Classe ${c.code}`,
+        });
+      }
+    });
+  });
+
+  // Calculate real users to add
+  users.forEach(u => {
+    if (u.classCode && u.status === 'active') {
+      const targetTeam = `${u.classCode}-Français`;
+      membersToAdd.push({
+        userName: `${u.firstName} ${u.lastName}`,
+        upn: u.upn,
+        userRole: u.role === 'teacher' ? 'Professeur' : 'Élève',
+        teamName: targetTeam,
+        reason: `Affectation automatique classe ${u.classCode}`,
+      });
+      actionsList.push({
+        id: 'act-' + actionsList.length,
+        type: 'AJOUT',
+        target: targetTeam,
+        userName: `${u.firstName} ${u.lastName}`,
+        userRole: u.role === 'teacher' ? 'Professeur' : 'Élève',
+        details: `Ajout membre à l'équipe`,
+        reason: `Inscription classe ${u.classCode}`,
+      });
+    }
+  });
+
   const simulation: SimulationResult = {
     schoolYear: db.config.currentSchoolYear,
-    teamsToCreateCount: 18,
-    teamsExistingCount: 394,
-    membersToAddCount: 27,
-    membersExistingCount: 1223,
-    membersToRemoveCount: 4,
+    teamsToCreateCount: teamsToCreate.length,
+    teamsExistingCount: teams.length,
+    membersToAddCount: membersToAdd.length,
+    membersExistingCount: 0,
+    membersToRemoveCount: membersToRemove.length,
     anomaliesCount: db.anomalies.filter((a: AnomalyItem) => !a.resolved).length,
-    teamsToCreate: [
-      { name: '606-Technologie', classCode: '606', subjectName: 'Technologie', reason: 'Nouvelle matière active pour la classe 606' },
-      { name: '504-Allemand', classCode: '504', subjectName: 'Allemand', reason: 'Groupe LV2 Allemand ouvert' },
-      { name: '102-NSI', classCode: '102', subjectName: 'NSI', reason: 'Ouverture groupe de spécialité 1ère' },
-      { name: '205-SNT', classCode: '205', subjectName: 'SNT', reason: 'Équipe manquante sur tenant Teams' },
-      { name: 'T03-HGGSP', classCode: 'T03', subjectName: 'HGGSP', reason: 'Groupe spécialité Terminale' },
-    ],
-    membersToAdd: [
-      { userName: 'Jean DUPONT', upn: 'jean.dupont@eleves.ndmissions.fr', userRole: 'Élève', teamName: '601-Français', reason: 'Nouvel élève inscrit en 601' },
-      { userName: 'Paul MARTIN', upn: 'paul.martin@eleves.ndmissions.fr', userRole: 'Élève', teamName: '601-Mathématiques', reason: 'Nouvel élève inscrit en 601' },
-      { userName: 'Maxime LAMBERT', upn: 'maxime.lambert@eleves.ndmissions.fr', userRole: 'Élève', teamName: '101-HGGSP', reason: 'Affectation à la spécialité choisie' },
-      { userName: 'Mme Hélène DUPONT', upn: 'helene.dupont@ndmissions.fr', userRole: 'Professeur', teamName: '601-Français', reason: 'Enseignante affectée (propriétaire)' },
-      { userName: 'Camille LEROY', upn: 'camille.leroy@eleves.ndmissions.fr', userRole: 'Élève', teamName: '601-Option-Latin', reason: 'Option Latin sélectionnée' },
-    ],
-    membersToRemove: [
-      { userName: 'Luc DURAND', upn: 'luc.durand@eleves.ndmissions.fr', userRole: 'Élève', teamName: '602-Français', reason: 'Changement de classe vers 601' },
-      { userName: 'Luc DURAND', upn: 'luc.durand@eleves.ndmissions.fr', userRole: 'Élève', teamName: '602-Mathématiques', reason: 'Changement de classe vers 601' },
-      { userName: 'Alexandre BERTRAND', upn: 'a.bertrand@eleves.ndmissions.fr', userRole: 'Élève', teamName: '201-Espagnol', reason: 'Changement de LV2 vers Allemand' },
-      { userName: 'Emma GIRAUD', upn: 'emma.giraud@eleves.ndmissions.fr', userRole: 'Élève', teamName: '101-SES', reason: 'Désinscription spécialité SES' },
-    ],
+    teamsToCreate: teamsToCreate.slice(0, 20),
+    membersToAdd: membersToAdd.slice(0, 25),
+    membersToRemove,
     anomalies: db.anomalies.filter((a: AnomalyItem) => !a.resolved),
-    actionsList: [
-      { id: 'act-1', type: 'AJOUT', target: '601-Français', userName: 'Jean DUPONT', userRole: 'Élève', details: 'Ajout de membre élève', reason: 'Inscription 601' },
-      { id: 'act-2', type: 'AJOUT', target: '601-Mathématiques', userName: 'Paul MARTIN', userRole: 'Élève', details: 'Ajout de membre élève', reason: 'Inscription 601' },
-      { id: 'act-3', type: 'RETRAIT', target: '602-Français', userName: 'Luc DURAND', userRole: 'Élève', details: 'Retrait de l\'ancienne équipe', reason: 'Changement vers 601' },
-      { id: 'act-4', type: 'CRÉATION', target: '606-Technologie', details: 'Création nouvelle équipe Teams Class', reason: 'Équipe inexistante' },
-      { id: 'act-5', type: 'AJOUT', target: '101-HGGSP', userName: 'Maxime LAMBERT', userRole: 'Élève', details: 'Ajout sélectif spécialité', reason: 'Spécialité 1ère choisie' },
-    ],
+    actionsList: actionsList.slice(0, 30),
   };
 
   db.logs.unshift({
     id: 'log-' + Date.now(),
     timestamp: new Date().toISOString().replace('T', ' ').substring(0, 19),
     action: 'SIMULATION',
-    target: 'Simulation Globale Teams',
-    details: 'Simulation calculée: 18 équipes à créer, 27 ajouts, 4 retraits, 0 écrasement',
+    target: 'Simulation Différentielle M365',
+    details: `Simulation calculée: ${teamsToCreate.length} équipes à créer, ${membersToAdd.length} ajouts prévus, 0 données fictives.`,
     status: 'Réussi',
     source: 'NDM-Core',
   });

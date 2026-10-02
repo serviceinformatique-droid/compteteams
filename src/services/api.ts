@@ -135,6 +135,22 @@ export const api = {
     return res.json();
   },
 
+  async pullM365(): Promise<{ success: boolean; importedCount: number; teamsCount: number; message: string; error?: string }> {
+    const res = await fetch('/api/sync/m365-pull', {
+      method: 'POST',
+      headers,
+    });
+    return res.json();
+  },
+
+  async purgeDemo(): Promise<{ success: boolean; message: string }> {
+    const res = await fetch('/api/users/purge-demo', {
+      method: 'POST',
+      headers,
+    });
+    return res.json();
+  },
+
   async runSimulation(): Promise<SimulationResult> {
     const res = await fetch('/api/simulation', {
       method: 'POST',

@@ -52,6 +52,34 @@ export default function App() {
   const [simulationData, setSimulationData] = useState<SimulationResult | null>(null);
   const [isSimulating, setIsSimulating] = useState(false);
   const [isSyncing, setIsSyncing] = useState(false);
+  const [isPullingM365, setIsPullingM365] = useState(false);
+
+  const handlePullM365 = async () => {
+    setIsPullingM365(true);
+    try {
+      const res = await api.pullM365();
+      if (res.success) {
+        showToast(res.message, 'success');
+      } else {
+        showToast(res.error || 'Erreur importation M365', 'error');
+      }
+      await loadData();
+    } catch (err: any) {
+      showToast('Impossible de contacter Microsoft Graph', 'error');
+    } finally {
+      setIsPullingM365(false);
+    }
+  };
+
+  const handlePurgeDemo = async () => {
+    try {
+      const res = await api.purgeDemo();
+      showToast(res.message, 'success');
+      await loadData();
+    } catch (err: any) {
+      showToast('Erreur purge comptes', 'error');
+    }
+  };
 
   // Notification Toast
   const [toast, setToast] = useState<{ message: string; type: 'success' | 'warning' | 'error' } | null>(null);
@@ -408,6 +436,9 @@ export default function App() {
                 classes={classes}
                 subjects={subjects}
                 onUpdateUser={handleUpdateUser}
+                onPullM365={handlePullM365}
+                onPurgeDemo={handlePurgeDemo}
+                isPullingM365={isPullingM365}
               />
             )}
 
