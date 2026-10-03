@@ -143,11 +143,51 @@ export const api = {
     return res.json();
   },
 
-  async updateTeam(id: string, data: Partial<TeamItem>): Promise<TeamItem> {
+  async updateTeam(id: string, data: Partial<TeamItem>): Promise<{ success: boolean; team?: TeamItem; error?: string }> {
     const res = await fetch(`/api/teams/${id}`, {
       method: 'PUT',
       headers,
       body: JSON.stringify(data),
+    });
+    return res.json();
+  },
+
+  async deleteTeam(id: string): Promise<{ success: boolean; deletedId?: string; deletedFromM365?: boolean; message?: string; error?: string }> {
+    const res = await fetch(`/api/teams/${id}`, {
+      method: 'DELETE',
+      headers,
+    });
+    return res.json();
+  },
+
+  async deleteAllTeams(deleteFromM365: boolean = false): Promise<{ success: boolean; deletedCount?: number; m365DeletedCount?: number; message?: string; error?: string }> {
+    const res = await fetch('/api/teams/delete-all', {
+      method: 'POST',
+      headers,
+      body: JSON.stringify({ deleteFromM365 }),
+    });
+    return res.json();
+  },
+
+  async addUserToAllTeams(params: {
+    userId?: string;
+    userEmail?: string;
+    roleInTeam?: 'owner' | 'member';
+    teamIds?: string[];
+  }): Promise<{
+    success: boolean;
+    localModifiedCount: number;
+    m365SyncedCount: number;
+    userName: string;
+    userEmail: string;
+    roleInTeam: string;
+    message: string;
+    error?: string;
+  }> {
+    const res = await fetch('/api/teams/add-user-to-all', {
+      method: 'POST',
+      headers,
+      body: JSON.stringify(params),
     });
     return res.json();
   },

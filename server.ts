@@ -781,12 +781,269 @@ app.get('/api/teams', (req: Request, res: Response) => {
   res.json(list);
 });
 
-app.put('/api/teams/:id', (req: Request, res: Response) => {
+app.put('/api/teams/:id', async (req: Request, res: Response) => {
   const index = db.teams.findIndex((t: TeamItem) => t.id === req.params.id);
-  if (index === -1) return res.status(404).json({ error: 'Équipe introuvable' });
-  db.teams[index] = { ...db.teams[index], ...req.body };
+  if (index === -1) return res.status(404).json({ success: false, error: 'Équipe introuvable' });
+
+  const oldTeam = db.teams[index];
+  const updatedTeam = { ...oldTeam, ...req.body };
+  db.teams[index] = updatedTeam;
+
+  // If provisioned on Graph and name or description changed, update Graph group
+  if (oldTeam.m365TeamId && (req.body.name || req.body.subjectName)) {
+    try {
+      const token = await fetchGraphToken();
+      await fetch(`https://graph.microsoft.com/v1.0/groups/${oldTeam.m365TeamId}`, {
+        method: 'PATCH',
+        headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          displayName: updatedTeam.name,
+          description: `Équipe Microsoft Teams Classe ${updatedTeam.classCode} - ${updatedTeam.subjectName} (Notre-Dame des Missions)`,
+        }),
+      });
+    } catch (err) {
+      console.warn('Could not update Graph group details', err);
+    }
+  }
+
+  db.logs.unshift({
+    id: 'log-' + Date.now(),
+    timestamp: new Date().toISOString().replace('T', ' ').substring(0, 19),
+    action: 'MODIFICATION_EQUIPE',
+    target: updatedTeam.name,
+    details: `Équipe modifiée : Nom='${updatedTeam.name}', Classe='${updatedTeam.classCode}', Matière='${updatedTeam.subjectName}'.`,
+    status: 'Réussi',
+    source: 'Admin',
+  });
+
   saveDatabase(db);
-  res.json(db.teams[index]);
+  res.json({ success: true, team: updatedTeam });
+});
+
+// Delete a single team (local DB and Microsoft Graph if provisioned)
+app.delete('/api/teams/:id', async (req: Request, res: Response) => {
+  const index = db.teams.findIndex((t: TeamItem) => t.id === req.params.id);
+  if (index === -1) return res.status(404).json({ success: false, error: 'Équipe introuvable' });
+
+  const team = db.teams[index];
+  let deletedFromM365 = false;
+
+  if (team.m365TeamId && !team.m365TeamId.startsWith('m365-demo')) {
+    try {
+      const token = await fetchGraphToken();
+      const delRes = await fetch(`https://graph.microsoft.com/v1.0/groups/${team.m365TeamId}`, {
+        method: 'DELETE',
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      if (delRes.ok || delRes.status === 204) {
+        deletedFromM365 = true;
+      }
+    } catch (err) {
+      console.warn('Erreur suppression groupe Graph:', err);
+    }
+  }
+
+  db.teams.splice(index, 1);
+
+  db.logs.unshift({
+    id: 'log-' + Date.now(),
+    timestamp: new Date().toISOString().replace('T', ' ').substring(0, 19),
+    action: 'SUPPRESSION_EQUIPE',
+    target: team.name,
+    details: `Équipe supprimée ${deletedFromM365 ? 'du serveur local et du Cloud Microsoft Teams (M365)' : 'de la base locale'}.`,
+    status: 'Réussi',
+    source: 'Admin',
+  });
+
+  saveDatabase(db);
+  res.json({
+    success: true,
+    deletedId: team.id,
+    deletedFromM365,
+    message: `Équipe "${team.name}" supprimée avec succès${deletedFromM365 ? ' (et retirée de Microsoft Teams)' : ''}.`,
+  });
+});
+
+// Delete ALL teams (local DB and optionally Microsoft Graph)
+app.post('/api/teams/delete-all', async (req: Request, res: Response) => {
+  const { deleteFromM365 } = req.body;
+  const initialCount = db.teams.length;
+  let m365DeletedCount = 0;
+
+  if (deleteFromM365) {
+    try {
+      const token = await fetchGraphToken();
+      const m365Teams = db.teams.filter((t: TeamItem) => t.m365TeamId && !t.m365TeamId.startsWith('m365-demo'));
+      for (const t of m365Teams) {
+        try {
+          await fetch(`https://graph.microsoft.com/v1.0/groups/${t.m365TeamId}`, {
+            method: 'DELETE',
+            headers: { Authorization: `Bearer ${token}` },
+          });
+          m365DeletedCount++;
+          await new Promise(r => setTimeout(r, 250));
+        } catch (e) {
+          // ignore individual error
+        }
+      }
+    } catch (err) {
+      console.warn('Erreur suppression en masse Graph:', err);
+    }
+  }
+
+  db.teams = [];
+
+  db.logs.unshift({
+    id: 'log-' + Date.now(),
+    timestamp: new Date().toISOString().replace('T', ' ').substring(0, 19),
+    action: 'SUPPRESSION_TOUTES_EQUIPES',
+    target: 'Toutes les équipes',
+    details: `Suppression de toutes les équipes (${initialCount} équipes effacées${deleteFromM365 ? `, ${m365DeletedCount} supprimées sur Microsoft Teams Cloud` : ''}).`,
+    status: 'Réussi',
+    source: 'Admin',
+  });
+
+  saveDatabase(db);
+  res.json({
+    success: true,
+    deletedCount: initialCount,
+    m365DeletedCount,
+    message: `${initialCount} équipe(s) supprimée(s) avec succès${deleteFromM365 ? ` (dont ${m365DeletedCount} supprimées sur Microsoft Teams Cloud)` : ''}.`,
+  });
+});
+
+// Add a User to ALL teams (as Owner or Member)
+app.post('/api/teams/add-user-to-all', async (req: Request, res: Response) => {
+  const { userId, userEmail, roleInTeam = 'owner', teamIds } = req.body;
+
+  let user = db.users.find((u: UserItem) =>
+    (userId && (u.id === userId || u.m365Id === userId)) ||
+    (userEmail && (u.email?.toLowerCase() === userEmail.toLowerCase() || u.upn?.toLowerCase() === userEmail.toLowerCase()))
+  );
+
+  if (!user && userEmail) {
+    const emailParts = userEmail.split('@')[0].split('.');
+    const firstName = emailParts[0] ? (emailParts[0].charAt(0).toUpperCase() + emailParts[0].slice(1)) : 'Admin';
+    const lastName = emailParts[1] ? emailParts[1].toUpperCase() : 'NDM';
+    user = {
+      id: 'u-custom-' + Date.now(),
+      m365Id: '',
+      email: userEmail.toLowerCase(),
+      upn: userEmail.toLowerCase(),
+      firstName,
+      lastName,
+      role: 'admin',
+      classCode: '',
+      status: 'active',
+      syncStatus: 'synced',
+      lastSync: new Date().toISOString(),
+    };
+    db.users.push(user);
+  }
+
+  if (!user) {
+    return res.status(404).json({ success: false, error: 'Utilisateur introuvable.' });
+  }
+
+  const targetTeams = Array.isArray(teamIds) && teamIds.length > 0
+    ? db.teams.filter((t: TeamItem) => teamIds.includes(t.id))
+    : db.teams;
+
+  let localModifiedCount = 0;
+  const m365TeamsToUpdate: TeamItem[] = [];
+
+  for (const team of targetTeams) {
+    if (roleInTeam === 'owner') {
+      team.assignedTeacherIds = team.assignedTeacherIds || [];
+      team.assignedTeachers = team.assignedTeachers || [];
+      if (!team.assignedTeacherIds.includes(user.id)) {
+        team.assignedTeacherIds.push(user.id);
+        team.assignedTeachers.push({
+          id: user.id,
+          name: `${user.firstName} ${user.lastName}`,
+          email: user.email || user.upn,
+        });
+        team.teacherCount = team.assignedTeacherIds.length;
+        localModifiedCount++;
+        if (team.m365TeamId && !team.m365TeamId.startsWith('m365-demo')) {
+          m365TeamsToUpdate.push(team);
+        }
+      }
+    } else {
+      team.memberCount = (team.memberCount || 0) + 1;
+      localModifiedCount++;
+      if (team.m365TeamId && !team.m365TeamId.startsWith('m365-demo')) {
+        m365TeamsToUpdate.push(team);
+      }
+    }
+  }
+
+  let m365SyncedCount = 0;
+  let m365UserId = user.m365Id;
+
+  if (!m365UserId && user.email) {
+    try {
+      const token = await fetchGraphToken();
+      const uRes = await fetch(`https://graph.microsoft.com/v1.0/users/${encodeURIComponent(user.email)}?$select=id`, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      if (uRes.ok) {
+        const uData = await uRes.json();
+        if (uData.id) {
+          m365UserId = uData.id;
+          user.m365Id = uData.id;
+        }
+      }
+    } catch (e) {
+      // ignore
+    }
+  }
+
+  if (m365UserId && m365TeamsToUpdate.length > 0) {
+    try {
+      const token = await fetchGraphToken();
+      for (const team of m365TeamsToUpdate) {
+        try {
+          const endpoint = roleInTeam === 'owner'
+            ? `https://graph.microsoft.com/v1.0/groups/${team.m365TeamId}/owners/$ref`
+            : `https://graph.microsoft.com/v1.0/groups/${team.m365TeamId}/members/$ref`;
+
+          await fetch(endpoint, {
+            method: 'POST',
+            headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
+            body: JSON.stringify({ '@odata.id': `https://graph.microsoft.com/v1.0/users/${m365UserId}` }),
+          });
+          m365SyncedCount++;
+          await new Promise(r => setTimeout(r, 150));
+        } catch (e) {
+          // ignore
+        }
+      }
+    } catch (e) {
+      // ignore
+    }
+  }
+
+  db.logs.unshift({
+    id: 'log-' + Date.now(),
+    timestamp: new Date().toISOString().replace('T', ' ').substring(0, 19),
+    action: 'AJOUT_UTILISATEUR_TOUTES_EQUIPES',
+    target: `${user.firstName} ${user.lastName} (${user.email})`,
+    details: `Utilisateur rattaché en tant que ${roleInTeam === 'owner' ? 'Propriétaire' : 'Membre'} à ${localModifiedCount} équipes (${m365SyncedCount} synchronisées sur Microsoft 365 Cloud).`,
+    status: 'Réussi',
+    source: 'Admin',
+  });
+
+  saveDatabase(db);
+  res.json({
+    success: true,
+    localModifiedCount,
+    m365SyncedCount,
+    userName: `${user.firstName} ${user.lastName}`,
+    userEmail: user.email,
+    roleInTeam,
+    message: `${user.firstName} ${user.lastName} ajouté avec succès dans ${localModifiedCount} équipes${m365SyncedCount > 0 ? ` (dont ${m365SyncedCount} synchronisées en direct sur Teams)` : ''} !`,
+  });
 });
 
 // Helper: Get Microsoft Graph Token

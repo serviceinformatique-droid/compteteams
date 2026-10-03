@@ -28,7 +28,9 @@ import {
   CheckSquare,
   Square,
   Zap,
-  Sliders
+  Sliders,
+  Edit3,
+  AlertTriangle
 } from 'lucide-react';
 import type { TeamItem, ClassItem, UserItem } from '../types/index.ts';
 import { api } from '../services/api.ts';
@@ -45,6 +47,9 @@ interface TeamsTabProps {
   onBulkAddAdminOwners?: (adminEmails?: string[], teamIds?: string[]) => void;
   onProvisionTeam: (teamId: string) => void;
   onImportAssignmentsCsv: (csvContent: string) => void;
+  onDeleteTeam?: (id: string) => void;
+  onDeleteAllTeams?: (deleteFromM365: boolean) => void;
+  onAddUserToAllTeams?: (params: { userId?: string; userEmail?: string; roleInTeam?: 'owner' | 'member'; teamIds?: string[] }) => void;
   isSyncing: boolean;
 }
 
@@ -60,6 +65,9 @@ export const TeamsTab: React.FC<TeamsTabProps> = ({
   onBulkAddAdminOwners,
   onProvisionTeam,
   onImportAssignmentsCsv,
+  onDeleteTeam,
+  onDeleteAllTeams,
+  onAddUserToAllTeams,
   isSyncing,
 }) => {
   const [search, setSearch] = useState('');
@@ -178,6 +186,113 @@ export const TeamsTab: React.FC<TeamsTabProps> = ({
       setEnforceResult(`Erreur lors de l'application: ${err.message}`);
     } finally {
       setIsEnforcingRestrictions(false);
+    }
+  };
+
+  // Edit Team Modal State
+  const [editingTeam, setEditingTeam] = useState<TeamItem | null>(null);
+  const [editName, setEditName] = useState('');
+  const [editClassCode, setEditClassCode] = useState('');
+  const [editSubjectName, setEditSubjectName] = useState('');
+  const [editAutoManaged, setEditAutoManaged] = useState(true);
+
+  // Single Team Deletion State
+  const [teamToDelete, setTeamToDelete] = useState<TeamItem | null>(null);
+  const [isDeletingSingle, setIsDeletingSingle] = useState(false);
+
+  // Delete All Teams Modal State
+  const [isDeleteAllModalOpen, setIsDeleteAllModalOpen] = useState(false);
+  const [confirmDeleteAllInput, setConfirmDeleteAllInput] = useState('');
+  const [deleteFromM365Option, setDeleteFromM365Option] = useState(false);
+  const [isDeletingAll, setIsDeletingAll] = useState(false);
+
+  // Add User to ALL Teams Modal State
+  const [isAddUserModalOpen, setIsAddUserModalOpen] = useState(false);
+  const [selectedUserForAdd, setSelectedUserForAdd] = useState<string>('');
+  const [customEmailForAdd, setCustomEmailForAdd] = useState('');
+  const [addUserRole, setAddUserRole] = useState<'owner' | 'member'>('owner');
+  const [addUserScope, setAddUserScope] = useState<'all' | 'filtered'>('all');
+  const [userSearchText, setUserSearchText] = useState('');
+  const [isSubmittingAddUser, setIsSubmittingAddUser] = useState(false);
+  const [addUserSuccessMsg, setAddUserSuccessMsg] = useState<string | null>(null);
+
+  const handleOpenEditModal = (t: TeamItem) => {
+    setEditingTeam(t);
+    setEditName(t.name);
+    setEditClassCode(t.classCode);
+    setEditSubjectName(t.subjectName);
+    setEditAutoManaged(t.autoManaged);
+  };
+
+  const handleSaveEditTeam = async () => {
+    if (!editingTeam) return;
+    onUpdateTeam(editingTeam.id, {
+      name: editName,
+      classCode: editClassCode,
+      subjectName: editSubjectName,
+      autoManaged: editAutoManaged,
+    });
+    setEditingTeam(null);
+  };
+
+  const handleExecuteDeleteSingle = async () => {
+    if (!teamToDelete) return;
+    setIsDeletingSingle(true);
+    try {
+      if (onDeleteTeam) {
+        await onDeleteTeam(teamToDelete.id);
+      } else {
+        await api.deleteTeam(teamToDelete.id);
+        onGenerateCatalog();
+      }
+    } finally {
+      setIsDeletingSingle(false);
+      setTeamToDelete(null);
+    }
+  };
+
+  const handleExecuteDeleteAll = async () => {
+    if (confirmDeleteAllInput.trim().toUpperCase() !== 'SUPPRIMER') return;
+    setIsDeletingAll(true);
+    try {
+      if (onDeleteAllTeams) {
+        await onDeleteAllTeams(deleteFromM365Option);
+      } else {
+        await api.deleteAllTeams(deleteFromM365Option);
+      }
+    } finally {
+      setIsDeletingAll(false);
+      setIsDeleteAllModalOpen(false);
+      setConfirmDeleteAllInput('');
+    }
+  };
+
+  const handleExecuteAddUserToAll = async () => {
+    setIsSubmittingAddUser(true);
+    setAddUserSuccessMsg(null);
+    try {
+      const targetTeamIds = addUserScope === 'filtered' ? filteredTeams.map(t => t.id) : undefined;
+      const params = {
+        userId: selectedUserForAdd || undefined,
+        userEmail: customEmailForAdd.trim() || undefined,
+        roleInTeam: addUserRole,
+        teamIds: targetTeamIds,
+      };
+
+      if (onAddUserToAllTeams) {
+        await onAddUserToAllTeams(params);
+        setAddUserSuccessMsg('Utilisateur ajouté avec succès à toutes les équipes !');
+      } else {
+        const res = await api.addUserToAllTeams(params);
+        if (res.success) {
+          setAddUserSuccessMsg(res.message);
+          onGenerateCatalog();
+        }
+      }
+    } catch (e: any) {
+      alert(`Erreur: ${e.message}`);
+    } finally {
+      setIsSubmittingAddUser(false);
     }
   };
 
@@ -326,6 +441,24 @@ export const TeamsTab: React.FC<TeamsTabProps> = ({
           >
             <Sparkles className="w-4 h-4 text-indigo-300" />
             Catalogue 37 Classes
+          </button>
+
+          <button
+            onClick={() => setIsAddUserModalOpen(true)}
+            className="px-3.5 py-2 rounded-xl bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-white text-xs font-semibold flex items-center gap-1.5 shadow-md shadow-blue-600/20 transition active:scale-95 border border-blue-400/30"
+            title="Ajouter un utilisateur (professeur, remplaçant, intervenant, admin) dans toutes les équipes Teams"
+          >
+            <UserPlus className="w-4 h-4 text-blue-100" />
+            Ajouter à toutes les équipes
+          </button>
+
+          <button
+            onClick={() => setIsDeleteAllModalOpen(true)}
+            className="px-3.5 py-2 rounded-xl bg-rose-950/60 hover:bg-rose-900/80 text-rose-300 border border-rose-800 text-xs font-semibold flex items-center gap-1.5 transition active:scale-95"
+            title="Supprimer toutes les équipes (base locale et facultativement Cloud M365)"
+          >
+            <Trash2 className="w-4 h-4 text-rose-400" />
+            Supprimer tout
           </button>
 
           <button
@@ -581,8 +714,25 @@ export const TeamsTab: React.FC<TeamsTabProps> = ({
                 <button
                   onClick={() => setSelectedTeam(t)}
                   className="px-2.5 py-1.5 rounded-lg bg-slate-700 hover:bg-slate-600 text-slate-200 text-xs font-medium transition"
+                  title="Voir la fiche détaillée"
                 >
                   Fiche
+                </button>
+
+                <button
+                  onClick={() => handleOpenEditModal(t)}
+                  className="p-1.5 rounded-lg bg-slate-700 hover:bg-indigo-600 text-slate-300 hover:text-white transition"
+                  title="Modifier cette équipe"
+                >
+                  <Edit3 className="w-3.5 h-3.5" />
+                </button>
+
+                <button
+                  onClick={() => setTeamToDelete(t)}
+                  className="p-1.5 rounded-lg bg-slate-700 hover:bg-rose-600 text-slate-300 hover:text-white transition"
+                  title="Supprimer cette équipe"
+                >
+                  <Trash2 className="w-3.5 h-3.5" />
                 </button>
               </div>
             </div>
@@ -1291,6 +1441,414 @@ export const TeamsTab: React.FC<TeamsTabProps> = ({
                   <>
                     <ShieldCheck className="w-4 h-4" />
                     Appliquer sur toutes les équipes Teams actives
+                  </>
+                )}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Modal Modifier l'Équipe */}
+      {editingTeam && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-sm">
+          <div className="bg-slate-900 border border-slate-700 rounded-2xl w-full max-w-md shadow-2xl p-5 sm:p-6 space-y-4">
+            <div className="flex items-start justify-between">
+              <div className="flex items-center gap-2.5">
+                <div className="w-10 h-10 rounded-xl bg-indigo-500/20 text-indigo-400 flex items-center justify-center">
+                  <Edit3 className="w-5 h-5" />
+                </div>
+                <div>
+                  <h3 className="text-base font-bold text-white">Modifier l'équipe</h3>
+                  <p className="text-xs text-slate-400 font-mono">{editingTeam.id}</p>
+                </div>
+              </div>
+              <button
+                onClick={() => setEditingTeam(null)}
+                className="p-1 rounded-lg text-slate-400 hover:text-white hover:bg-slate-800"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            <div className="space-y-3 text-xs">
+              <div>
+                <label className="block text-slate-300 font-semibold mb-1">Nom de l'équipe :</label>
+                <input
+                  type="text"
+                  value={editName}
+                  onChange={(e) => setEditName(e.target.value)}
+                  className="w-full bg-slate-950 border border-slate-700 rounded-xl px-3 py-2 text-white focus:outline-none focus:border-indigo-500"
+                />
+              </div>
+
+              <div className="grid grid-cols-2 gap-2">
+                <div>
+                  <label className="block text-slate-300 font-semibold mb-1">Code Classe :</label>
+                  <input
+                    type="text"
+                    value={editClassCode}
+                    onChange={(e) => setEditClassCode(e.target.value)}
+                    className="w-full bg-slate-950 border border-slate-700 rounded-xl px-3 py-2 text-white focus:outline-none focus:border-indigo-500"
+                  />
+                </div>
+                <div>
+                  <label className="block text-slate-300 font-semibold mb-1">Matière / Cours :</label>
+                  <input
+                    type="text"
+                    value={editSubjectName}
+                    onChange={(e) => setEditSubjectName(e.target.value)}
+                    className="w-full bg-slate-950 border border-slate-700 rounded-xl px-3 py-2 text-white focus:outline-none focus:border-indigo-500"
+                  />
+                </div>
+              </div>
+
+              <div className="flex items-center gap-2 pt-2">
+                <input
+                  type="checkbox"
+                  id="editAutoManaged"
+                  checked={editAutoManaged}
+                  onChange={(e) => setEditAutoManaged(e.target.checked)}
+                  className="rounded text-indigo-600 focus:ring-0 bg-slate-950 border-slate-700"
+                />
+                <label htmlFor="editAutoManaged" className="text-slate-300 cursor-pointer">
+                  Gestion automatique (synchronisation par script)
+                </label>
+              </div>
+
+              {editingTeam.m365TeamId && (
+                <div className="p-2.5 rounded-xl bg-indigo-950/40 border border-indigo-500/30 text-[11px] text-indigo-300">
+                  ℹ️ Cette équipe est active sur Microsoft 365 Cloud. Son nom sera également mis à jour sur Microsoft Teams.
+                </div>
+              )}
+            </div>
+
+            <div className="flex items-center justify-end gap-2 pt-2">
+              <button
+                onClick={() => setEditingTeam(null)}
+                className="px-4 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-semibold"
+              >
+                Annuler
+              </button>
+              <button
+                onClick={handleSaveEditTeam}
+                className="px-5 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-bold transition shadow-lg shadow-indigo-600/30"
+              >
+                Enregistrer
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Modal Confirmation Suppression Unitaire */}
+      {teamToDelete && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-sm">
+          <div className="bg-slate-900 border border-slate-700 rounded-2xl w-full max-w-md shadow-2xl p-5 sm:p-6 space-y-4">
+            <div className="flex items-start gap-3">
+              <div className="w-10 h-10 rounded-xl bg-rose-500/20 text-rose-400 flex items-center justify-center shrink-0">
+                <AlertTriangle className="w-5 h-5" />
+              </div>
+              <div>
+                <h3 className="text-base font-bold text-white">Supprimer l'équipe ?</h3>
+                <p className="text-xs text-slate-400 mt-1">
+                  Êtes-vous sûr de vouloir supprimer l'équipe <strong className="text-white">"{teamToDelete.name}"</strong> ({teamToDelete.classCode}) ?
+                </p>
+              </div>
+            </div>
+
+            {teamToDelete.m365TeamId && (
+              <div className="p-3 rounded-xl bg-rose-950/50 border border-rose-800 text-xs text-rose-200">
+                ⚠️ Cette équipe est active sur Microsoft 365 Cloud. Elle sera également <strong>définitivement supprimée du Cloud Microsoft Teams</strong>.
+              </div>
+            )}
+
+            <div className="flex items-center justify-end gap-2 pt-2">
+              <button
+                onClick={() => setTeamToDelete(null)}
+                disabled={isDeletingSingle}
+                className="px-4 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-semibold"
+              >
+                Annuler
+              </button>
+              <button
+                onClick={handleExecuteDeleteSingle}
+                disabled={isDeletingSingle}
+                className="px-5 py-2 rounded-xl bg-rose-600 hover:bg-rose-500 disabled:opacity-50 text-white text-xs font-bold flex items-center gap-1.5 transition shadow-lg shadow-rose-600/30"
+              >
+                {isDeletingSingle ? (
+                  <>
+                    <RefreshCw className="w-3.5 h-3.5 animate-spin" />
+                    Suppression...
+                  </>
+                ) : (
+                  <>
+                    <Trash2 className="w-3.5 h-3.5" />
+                    Supprimer l'équipe
+                  </>
+                )}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Modal Suppression de TOUTES les Équipes */}
+      {isDeleteAllModalOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-sm">
+          <div className="bg-slate-900 border border-rose-900/60 rounded-2xl w-full max-w-lg shadow-2xl p-5 sm:p-6 space-y-4">
+            <div className="flex items-start gap-3">
+              <div className="w-12 h-12 rounded-2xl bg-rose-500/20 text-rose-400 flex items-center justify-center shrink-0">
+                <AlertTriangle className="w-6 h-6" />
+              </div>
+              <div>
+                <h3 className="text-lg font-bold text-white">Supprimer TOUTES les équipes ({teams.length})</h3>
+                <p className="text-xs text-slate-400 mt-1">
+                  Attention : cette action va purger la totalité des {teams.length} équipes du système.
+                </p>
+              </div>
+            </div>
+
+            <div className="p-3.5 rounded-xl bg-rose-950/40 border border-rose-800/80 space-y-2 text-xs text-rose-200">
+              <label className="flex items-start gap-2 cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={deleteFromM365Option}
+                  onChange={(e) => setDeleteFromM365Option(e.target.checked)}
+                  className="rounded text-rose-600 mt-0.5"
+                />
+                <span>
+                  <strong>Supprimer également les équipes créées sur Microsoft Teams Cloud</strong> ({m365RealCount} équipes actives sur votre tenant)
+                </span>
+              </label>
+              <p className="text-[11px] text-rose-300/80 pl-5">
+                Si non coché, seules les équipes locales seront réinitialisées. Vous pourrez régénérer le catalogue propre à tout moment en cliquant sur « Catalogue 37 Classes ».
+              </p>
+            </div>
+
+            <div className="space-y-1.5 text-xs">
+              <label className="text-slate-300 font-semibold">
+                Pour confirmer la suppression totale, tapez <span className="font-mono text-rose-400 font-bold">SUPPRIMER</span> :
+              </label>
+              <input
+                type="text"
+                placeholder="SUPPRIMER"
+                value={confirmDeleteAllInput}
+                onChange={(e) => setConfirmDeleteAllInput(e.target.value)}
+                className="w-full bg-slate-950 border border-rose-800 rounded-xl px-3 py-2 text-white font-mono focus:outline-none focus:border-rose-500"
+              />
+            </div>
+
+            <div className="flex items-center justify-end gap-2 pt-2">
+              <button
+                onClick={() => {
+                  setIsDeleteAllModalOpen(false);
+                  setConfirmDeleteAllInput('');
+                }}
+                disabled={isDeletingAll}
+                className="px-4 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-semibold"
+              >
+                Annuler
+              </button>
+              <button
+                onClick={handleExecuteDeleteAll}
+                disabled={confirmDeleteAllInput.trim().toUpperCase() !== 'SUPPRIMER' || isDeletingAll}
+                className="px-5 py-2 rounded-xl bg-rose-600 hover:bg-rose-500 disabled:opacity-40 text-white text-xs font-bold flex items-center gap-1.5 transition shadow-lg shadow-rose-600/30"
+              >
+                {isDeletingAll ? (
+                  <>
+                    <RefreshCw className="w-3.5 h-3.5 animate-spin" />
+                    Suppression globale en cours...
+                  </>
+                ) : (
+                  <>
+                    <Trash2 className="w-3.5 h-3.5" />
+                    Confirmer la suppression totale
+                  </>
+                )}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Modal Ajouter un Utilisateur à TOUTES les Équipes */}
+      {isAddUserModalOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-sm">
+          <div className="bg-slate-900 border border-slate-700 rounded-2xl w-full max-w-lg shadow-2xl p-5 sm:p-6 space-y-4 max-h-[90vh] flex flex-col">
+            <div className="flex items-start justify-between shrink-0">
+              <div className="flex items-center gap-2.5">
+                <div className="w-10 h-10 rounded-xl bg-blue-500/20 text-blue-400 flex items-center justify-center">
+                  <UserPlus className="w-5 h-5" />
+                </div>
+                <div>
+                  <h3 className="text-base font-bold text-white">Ajouter un utilisateur à toutes les équipes</h3>
+                  <p className="text-xs text-slate-400">Rattachement global immédiat (serveur local + Microsoft Teams Cloud)</p>
+                </div>
+              </div>
+              <button
+                onClick={() => {
+                  setIsAddUserModalOpen(false);
+                  setAddUserSuccessMsg(null);
+                }}
+                className="p-1 rounded-lg text-slate-400 hover:text-white hover:bg-slate-800"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            <div className="flex-1 overflow-y-auto space-y-3.5 text-xs">
+              <div>
+                <label className="block text-slate-300 font-semibold mb-1">
+                  1. Sélectionner un compte existant de l'annuaire :
+                </label>
+                <div className="relative mb-2">
+                  <Search className="w-3.5 h-3.5 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
+                  <input
+                    type="text"
+                    placeholder="Filtrer parmi les enseignants, personnels, admins..."
+                    value={userSearchText}
+                    onChange={(e) => setUserSearchText(e.target.value)}
+                    className="w-full bg-slate-950 border border-slate-700 rounded-xl pl-8 pr-3 py-1.5 text-white text-xs"
+                  />
+                </div>
+                <div className="max-h-40 overflow-y-auto bg-slate-950 border border-slate-800 rounded-xl p-1.5 space-y-1">
+                  {users
+                    .filter(u => 
+                      !userSearchText || 
+                      `${u.firstName} ${u.lastName}`.toLowerCase().includes(userSearchText.toLowerCase()) || 
+                      (u.email || '').toLowerCase().includes(userSearchText.toLowerCase())
+                    )
+                    .slice(0, 30)
+                    .map(u => (
+                      <div
+                        key={u.id}
+                        onClick={() => {
+                          setSelectedUserForAdd(u.id);
+                          setCustomEmailForAdd('');
+                        }}
+                        className={`p-2 rounded-lg cursor-pointer flex items-center justify-between transition ${
+                          selectedUserForAdd === u.id ? 'bg-blue-600 text-white font-medium' : 'hover:bg-slate-800 text-slate-300'
+                        }`}
+                      >
+                        <div className="truncate">
+                          <span className="font-semibold">{u.firstName} {u.lastName}</span>
+                          <span className="text-[10px] text-slate-400 block truncate">{u.email || u.upn}</span>
+                        </div>
+                        <span className="text-[10px] uppercase font-bold px-1.5 py-0.5 rounded bg-slate-800 text-slate-300">
+                          {u.role}
+                        </span>
+                      </div>
+                    ))}
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-slate-300 font-semibold mb-1">
+                  Ou saisir une adresse email directement :
+                </label>
+                <input
+                  type="email"
+                  placeholder="ex: mjoubin@notredamedesmissions.com ou direction@..."
+                  value={customEmailForAdd}
+                  onChange={(e) => {
+                    setCustomEmailForAdd(e.target.value);
+                    setSelectedUserForAdd('');
+                  }}
+                  className="w-full bg-slate-950 border border-slate-700 rounded-xl px-3 py-2 text-white focus:outline-none focus:border-blue-500"
+                />
+              </div>
+
+              <div className="grid grid-cols-2 gap-3 pt-1">
+                <div>
+                  <label className="block text-slate-300 font-semibold mb-1.5">2. Rôle dans les équipes :</label>
+                  <div className="space-y-1">
+                    <label className="flex items-center gap-2 p-2 rounded-lg bg-slate-800/80 border border-slate-700 cursor-pointer">
+                      <input
+                        type="radio"
+                        name="addUserRole"
+                        value="owner"
+                        checked={addUserRole === 'owner'}
+                        onChange={() => setAddUserRole('owner')}
+                        className="text-blue-500"
+                      />
+                      <span><strong>Propriétaire (Owner)</strong></span>
+                    </label>
+                    <label className="flex items-center gap-2 p-2 rounded-lg bg-slate-800/80 border border-slate-700 cursor-pointer">
+                      <input
+                        type="radio"
+                        name="addUserRole"
+                        value="member"
+                        checked={addUserRole === 'member'}
+                        onChange={() => setAddUserRole('member')}
+                        className="text-blue-500"
+                      />
+                      <span><strong>Membre (Member)</strong></span>
+                    </label>
+                  </div>
+                </div>
+
+                <div>
+                  <label className="block text-slate-300 font-semibold mb-1.5">3. Périmètre d'équipes :</label>
+                  <div className="space-y-1">
+                    <label className="flex items-center gap-2 p-2 rounded-lg bg-slate-800/80 border border-slate-700 cursor-pointer">
+                      <input
+                        type="radio"
+                        name="addUserScope"
+                        value="all"
+                        checked={addUserScope === 'all'}
+                        onChange={() => setAddUserScope('all')}
+                        className="text-blue-500"
+                      />
+                      <span><strong>Toutes ({teams.length})</strong></span>
+                    </label>
+                    <label className="flex items-center gap-2 p-2 rounded-lg bg-slate-800/80 border border-slate-700 cursor-pointer">
+                      <input
+                        type="radio"
+                        name="addUserScope"
+                        value="filtered"
+                        checked={addUserScope === 'filtered'}
+                        onChange={() => setAddUserScope('filtered')}
+                        className="text-blue-500"
+                      />
+                      <span><strong>Filtrées ({filteredTeams.length})</strong></span>
+                    </label>
+                  </div>
+                </div>
+              </div>
+
+              {addUserSuccessMsg && (
+                <div className="p-3 rounded-xl bg-emerald-950/60 border border-emerald-800 text-xs text-emerald-200">
+                  {addUserSuccessMsg}
+                </div>
+              )}
+            </div>
+
+            <div className="flex items-center justify-end gap-2 pt-2 shrink-0 border-t border-slate-800">
+              <button
+                onClick={() => {
+                  setIsAddUserModalOpen(false);
+                  setAddUserSuccessMsg(null);
+                }}
+                disabled={isSubmittingAddUser}
+                className="px-4 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-semibold"
+              >
+                Fermer
+              </button>
+              <button
+                onClick={handleExecuteAddUserToAll}
+                disabled={(!selectedUserForAdd && !customEmailForAdd.trim()) || isSubmittingAddUser}
+                className="px-5 py-2 rounded-xl bg-blue-600 hover:bg-blue-500 disabled:opacity-50 text-white text-xs font-bold flex items-center gap-2 shadow-lg shadow-blue-600/30 transition"
+              >
+                {isSubmittingAddUser ? (
+                  <>
+                    <RefreshCw className="w-4 h-4 animate-spin" />
+                    Ajout en cours...
+                  </>
+                ) : (
+                  <>
+                    <UserPlus className="w-4 h-4" />
+                    Valider l'ajout global
                   </>
                 )}
               </button>

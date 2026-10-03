@@ -170,11 +170,38 @@ Toutes les équipes créées respectent à 100% le paramétrage de sécurité re
 
 ---
 
-## 🚀 8. Déploiement GitHub
+## ⚙️ 8. Gestion des Équipes & Utilisateurs Globaux (100% Serveur, Zéro Cache)
+
+### 1. Ajouter un utilisateur à TOUTES les équipes :
+* Cliquez sur **« 👤 Ajouter à toutes les équipes »** en haut de l'onglet **Équipes Teams**.
+* Vous pouvez :
+  * Sélectionner n'importe quel compte existant (enseignant, personnel, suppléant, admin)
+  * Ou taper directement une adresse email (ex: `nouveau.professeur@notredamedesmissions.com` ou `direction@...`)
+* Définissez son rôle : **Propriétaire (Owner)** ou **Membre (Member)**.
+* L'utilisateur est rattaché en local, et **automatiquement synchronisé en direct sur Microsoft 365 Cloud** pour toutes les équipes actives via l'API Graph (`POST /groups/{id}/owners` ou `members`).
+
+### 2. Modifier une équipe :
+* Sur chaque carte d'équipe, cliquez sur le bouton **✏️ (Modifier)**.
+* Vous pouvez modifier : le nom de l'équipe, le code de classe, la matière, et le mode de gestion automatique.
+* Si l'équipe est déjà déployée sur Microsoft 365 Cloud, son `displayName` et sa description sont **automatiquement mis à jour sur Microsoft Teams**.
+
+### 3. Supprimer une équipe :
+* Sur chaque carte d'équipe, cliquez sur le bouton **🗑️ (Supprimer)**.
+* Une confirmation s'affiche : si l'équipe est créée sur Microsoft 365 Cloud, elle est également **définitivement supprimée du Cloud Microsoft Teams (`DELETE /v1.0/groups/{id}`)**.
+
+### 4. Supprimer TOUTES les équipes :
+* Cliquez sur le bouton rouge **« 🗑️ Supprimer tout »** dans la barre d'outils.
+* Une boîte de dialogue de sécurité protégée requiert la saisie du mot `SUPPRIMER`.
+* Vous pouvez choisir de supprimer uniquement la base locale ou de **purger également toutes les équipes du Cloud Microsoft 365**.
+* Vous pouvez ensuite recréer ou ré-importer le catalogue propre à tout moment en cliquant sur **« Catalogue 37 Classes »** ou **« Affecter Profs Officiels »**.
+
+---
+
+## 🚀 9. Déploiement GitHub
 
 Pour synchroniser le code avec votre compte GitHub `serviceinformatique-droid` :
 ```bash
 cd /opt/ndm-teams-manager
 chmod +x scripts/push-github.sh
-./scripts/push-github.sh "feat: creation en masse teams et restrictions membres pedagogiques strictes"
+./scripts/push-github.sh "feat: gestion complete equipes ajout utilisateur a tout modif et suppression unitaire et globale"
 ```

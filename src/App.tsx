@@ -400,10 +400,52 @@ export default function App() {
   const handleUpdateTeam = async (id: string, teamData: Partial<TeamItem>) => {
     try {
       await api.updateTeam(id, teamData);
-      showToast('Paramètre équipe mis à jour', 'success');
+      showToast('Équipe mise à jour avec succès', 'success');
       await loadData();
     } catch (err) {
       showToast('Erreur mise à jour équipe', 'error');
+    }
+  };
+
+  const handleDeleteTeam = async (id: string) => {
+    try {
+      const res = await api.deleteTeam(id);
+      if (res.success) {
+        showToast(res.message || 'Équipe supprimée avec succès', 'success');
+        await loadData();
+      } else {
+        showToast(res.error || 'Erreur suppression équipe', 'error');
+      }
+    } catch (err) {
+      showToast('Erreur suppression équipe', 'error');
+    }
+  };
+
+  const handleDeleteAllTeams = async (deleteFromM365: boolean = false) => {
+    try {
+      const res = await api.deleteAllTeams(deleteFromM365);
+      if (res.success) {
+        showToast(res.message || 'Toutes les équipes ont été supprimées', 'success');
+        await loadData();
+      } else {
+        showToast(res.error || 'Erreur suppression globale', 'error');
+      }
+    } catch (err) {
+      showToast('Erreur suppression globale des équipes', 'error');
+    }
+  };
+
+  const handleAddUserToAllTeams = async (params: { userId?: string; userEmail?: string; roleInTeam?: 'owner' | 'member'; teamIds?: string[] }) => {
+    try {
+      const res = await api.addUserToAllTeams(params);
+      if (res.success) {
+        showToast(res.message, 'success');
+        await loadData();
+      } else {
+        showToast(res.error || 'Erreur ajout utilisateur', 'error');
+      }
+    } catch (err) {
+      showToast('Erreur rattachement utilisateur aux équipes', 'error');
     }
   };
 
@@ -581,6 +623,9 @@ export default function App() {
                 onBulkAddAdminOwners={handleBulkAddAdminOwners}
                 onProvisionTeam={handleProvisionTeam}
                 onImportAssignmentsCsv={handleImportAssignmentsCsv}
+                onDeleteTeam={handleDeleteTeam}
+                onDeleteAllTeams={handleDeleteAllTeams}
+                onAddUserToAllTeams={handleAddUserToAllTeams}
                 isSyncing={isSyncing}
               />
             )}
