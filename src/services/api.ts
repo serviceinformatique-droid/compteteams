@@ -218,6 +218,38 @@ export const api = {
     return res.json();
   },
 
+  async provisionBatchTeams(params: { classCode?: string; teamIds?: string[]; allPending?: boolean }): Promise<{
+    success: boolean;
+    message: string;
+    processedCount: number;
+    successCount: number;
+    failedCount: number;
+    remainingCount?: number;
+    results?: { teamId: string; teamName: string; success: boolean; error?: string }[];
+    error?: string;
+  }> {
+    const res = await fetch('/api/teams/provision-batch', {
+      method: 'POST',
+      headers,
+      body: JSON.stringify(params),
+    });
+    return res.json();
+  },
+
+  async enforceTeamRestrictions(params: { teamId?: string; all?: boolean }): Promise<{
+    success: boolean;
+    message: string;
+    count?: number;
+    error?: string;
+  }> {
+    const res = await fetch('/api/teams/enforce-restrictions', {
+      method: 'POST',
+      headers,
+      body: JSON.stringify(params),
+    });
+    return res.json();
+  },
+
   async importTeacherAssignmentsCsv(csvContent: string): Promise<{ success: boolean; assignedCount: number; message: string; error?: string }> {
     const res = await fetch('/api/teams/import-assignments-csv', {
       method: 'POST',

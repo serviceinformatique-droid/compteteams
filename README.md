@@ -136,25 +136,45 @@ C'est une **sécurité essentielle** : l'application ne crée pas aveuglément 2
   Lors de la création de l'équipe sur Teams, tous les propriétaires assignés sont passés directement dans `owners@odata.bind` (ou ajoutés via l'API Graph).
 
 ### Comment créer les équipes et assigner les professeurs :
-1. **Assignation Multi-Propriétaires :**
-   Sur chaque carte d'équipe, cliquez sur **« Gérer »** ou **« + Assigner »** : une fenêtre interactive s'ouvre avec cases à cocher, recherche rapide et filtres (Tous, Enseignants, Admins Office). Vous pouvez cocher autant d'enseignants et d'admins que nécessaire.
-2. **Co-propriété Massive des Administrateurs :**
-   Cliquez sur **« 🛡️ Co-propriété Admins Office »** pour associer `mjoubin@notredamedesmissions.com` et les admins à toutes les équipes ou aux équipes filtrées.
-3. **Application de la Grille Officielle UnDeuxTEMPS :**
-   Le bouton **« 🪄 Affecter Profs Officiels »** réinjecte les professeurs titulaires par classe et matière.
-4. **Import de Grille Personnalisée (CSV / Excel) :**
-   Le bouton **« 📄 Importer CSV »** permet d'injecter un fichier `classe;matiere;professeur`.
-5. **Création Réelle sur Microsoft Teams Cloud :**
-   * Cliquez sur **« 🚀 Créer sur Teams »** : le serveur contacte l'API Microsoft Graph (`POST /v1.0/groups`), nomme tous les enseignants et administrateurs assignés **Propriétaires (Owners)**, ajoute les élèves réels de la classe comme **Membres**, et active l'équipe Teams.
-   * L'ID Microsoft réel apparaît avec le badge vert **`✓ M365 Cloud`**.
+1. **Création en Masse Automatisée (Recommandé) :**
+   * **Vous n'avez pas besoin de créer les équipes une par une !** Cliquez simplement sur le bouton **« 🚀 Tout créer sur Teams (En masse) »** dans l'onglet *Équipes Teams*.
+   * Choisissez le périmètre : **Classe sélectionnée** (ex: les 15 équipes de la classe 101 en 1 clic) ou **Toutes les équipes en attente** (les 565 équipes).
+   * L'outil crée les groupes, active Teams (`PUT /groups/{id}/team`), injecte les restrictions membres, associe tous les élèves et propriétaires avec temporisation anti-blocage Microsoft.
+2. **Assignation Multi-Propriétaires :**
+   Sur chaque carte d'équipe, cliquez sur **« Gérer »** ou **« + Assigner »** : une fenêtre interactive s'ouvre pour cocher autant d'enseignants et d'admins que nécessaire.
+3. **Co-propriété Massive des Administrateurs :**
+   Cliquez sur **« 🛡️ Co-propriété Admins Office »** pour associer `mjoubin@notredamedesmissions.com` et les admins à toutes les équipes.
+4. **Application des Restrictions Membres Strictes :**
+   Le bouton **« 🛡️ Restrictions membres »** permet de ré-appliquer à tout moment le profil de sécurité sur toutes les équipes Teams actives.
+5. **Création Unitaire Ponctuelle :**
+   Le bouton vert **« Créer sur Teams »** reste disponible sur chaque équipe individuelle si vous souhaitez tester ou créer une équipe spécifique isolément.
 
 ---
 
-## 🚀 6. Déploiement GitHub
+## 🔒 7. Restrictions Strictes des Membres (Profil Pédagogique Conforme)
+
+Toutes les équipes créées respectent à 100% le paramétrage de sécurité requis :
+
+| Paramètre Teams (Graph API) | Valeur Appliquée | Contexte Pédagogique |
+|---|---|---|
+| `allowCreateUpdateChannels` | **Désactivé (`false`)** | Les élèves ne peuvent ni créer ni renommer de canaux |
+| `allowCreatePrivateChannels` | **Désactivé (`false`)** | Interdiction formelle de canaux privés entre élèves |
+| `allowDeleteChannels` | **Désactivé (`false`)** | Les élèves ne peuvent pas supprimer de canaux |
+| `allowAddRemoveApps` | **Désactivé (`false`)** | Interdiction d'ajouter des applications ou bots externes |
+| `allowCreateUpdateRemoveTabs` | **Désactivé (`false`)** | Interdiction de modifier les onglets de cours |
+| `allowCreateUpdateRemoveConnectors`| **Désactivé (`false`)** | Interdiction d'ajouter des connecteurs |
+| `allowOwnerDeleteMessages` | **Activé (`true`)** | **Les professeurs et admins peuvent modérer et supprimer tous les messages** |
+| `allowUserDeleteMessages` | **Activé (`true`)** | Les élèves peuvent supprimer leurs propres erreurs |
+| `allowUserEditMessages` | **Activé (`true`)** | Les élèves peuvent corriger leurs propres messages |
+| `allowGiphy` / Memes | **Désactivé (`false`)** | Environnement d'apprentissage sérieux et sécurisé |
+
+---
+
+## 🚀 8. Déploiement GitHub
 
 Pour synchroniser le code avec votre compte GitHub `serviceinformatique-droid` :
 ```bash
 cd /opt/ndm-teams-manager
 chmod +x scripts/push-github.sh
-./scripts/push-github.sh "feat: multi-proprietaires teams et co-propriete mjoubin admins office"
+./scripts/push-github.sh "feat: creation en masse teams et restrictions membres pedagogiques strictes"
 ```

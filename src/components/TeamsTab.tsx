@@ -22,9 +22,16 @@ import {
   Trash2,
   Plus,
   Check,
-  UserPlus
+  UserPlus,
+  Rocket,
+  ShieldCheck,
+  CheckSquare,
+  Square,
+  Zap,
+  Sliders
 } from 'lucide-react';
 import type { TeamItem, ClassItem, UserItem } from '../types/index.ts';
+import { api } from '../services/api.ts';
 
 interface TeamsTabProps {
   teams: TeamItem[];
@@ -78,6 +85,101 @@ export const TeamsTab: React.FC<TeamsTabProps> = ({
   const [isCsvModalOpen, setIsCsvModalOpen] = useState(false);
   const [csvContent, setCsvContent] = useState('');
   const [provisioningTeamId, setProvisioningTeamId] = useState<string | null>(null);
+
+  // Batch Provisioning Modal State
+  const [isBatchModalOpen, setIsBatchModalOpen] = useState(false);
+  const [batchScope, setBatchScope] = useState<'class' | 'pending' | 'filtered'>('class');
+  const [isBatchRunning, setIsBatchRunning] = useState(false);
+  const [batchProgress, setBatchProgress] = useState<{ current: number; total: number; teamName: string; successCount: number; failedCount: number } | null>(null);
+
+  // Security Restrictions Modal State
+  const [isRestrictionsModalOpen, setIsRestrictionsModalOpen] = useState(false);
+  const [isEnforcingRestrictions, setIsEnforcingRestrictions] = useState(false);
+  const [enforceResult, setEnforceResult] = useState<string | null>(null);
+
+  const handleStartBatchProvision = async () => {
+    setIsBatchRunning(true);
+    let targetTeams: TeamItem[] = [];
+
+    if (batchScope === 'class') {
+      const targetClass = classFilter !== 'all' ? classFilter : '101';
+      targetTeams = teams.filter(t => t.classCode === targetClass && (!t.m365TeamId || t.status !== 'synced'));
+    } else if (batchScope === 'filtered') {
+      targetTeams = filteredTeams.filter(t => !t.m365TeamId || t.status !== 'synced');
+    } else {
+      targetTeams = teams.filter(t => !t.m365TeamId || t.status !== 'synced');
+    }
+
+    if (targetTeams.length === 0) {
+      alert('Aucune équipe en attente de création trouvée pour ce périmètre.');
+      setIsBatchRunning(false);
+      return;
+    }
+
+    setBatchProgress({
+      current: 0,
+      total: targetTeams.length,
+      teamName: targetTeams[0].name,
+      successCount: 0,
+      failedCount: 0,
+    });
+
+    let successAcc = 0;
+    let failedAcc = 0;
+
+    for (let i = 0; i < targetTeams.length; i++) {
+      const currentTeam = targetTeams[i];
+      setBatchProgress({
+        current: i + 1,
+        total: targetTeams.length,
+        teamName: currentTeam.name,
+        successCount: successAcc,
+        failedCount: failedAcc,
+      });
+
+      try {
+        const res = await api.provisionTeamM365(currentTeam.id);
+        if (res.success) {
+          successAcc++;
+        } else {
+          failedAcc++;
+        }
+      } catch (e) {
+        failedAcc++;
+      }
+
+      setBatchProgress({
+        current: i + 1,
+        total: targetTeams.length,
+        teamName: currentTeam.name,
+        successCount: successAcc,
+        failedCount: failedAcc,
+      });
+
+      // Pause to avoid Graph throttling
+      await new Promise(r => setTimeout(r, 1200));
+    }
+
+    setIsBatchRunning(false);
+    onGenerateCatalog(); // refresh data
+  };
+
+  const handleApplyRestrictionsAll = async () => {
+    setIsEnforcingRestrictions(true);
+    setEnforceResult(null);
+    try {
+      const res = await api.enforceTeamRestrictions({ all: true });
+      if (res.success) {
+        setEnforceResult(`Restrictions appliquées avec succès sur ${res.count || 0} équipes Microsoft Teams !`);
+      } else {
+        setEnforceResult(`Erreur: ${res.error}`);
+      }
+    } catch (err: any) {
+      setEnforceResult(`Erreur lors de l'application: ${err.message}`);
+    } finally {
+      setIsEnforcingRestrictions(false);
+    }
+  };
 
   // Assignable staff (teachers and administrators)
   const assignableStaff = users.filter((u) => (u.role === 'teacher' || u.role === 'admin') && u.status === 'active');
@@ -182,20 +284,38 @@ export const TeamsTab: React.FC<TeamsTabProps> = ({
         {/* Global Action Buttons */}
         <div className="flex flex-wrap items-center gap-2 w-full lg:w-auto">
           <button
+            onClick={() => setIsBatchModalOpen(true)}
+            className="px-4 py-2 rounded-xl bg-gradient-to-r from-emerald-600 via-teal-600 to-cyan-600 hover:from-emerald-500 hover:to-cyan-500 text-white text-xs font-bold flex items-center gap-2 shadow-lg shadow-emerald-600/30 transition active:scale-95 border border-emerald-400/40"
+            title="Créer automatiquement toutes les équipes en masse sans devoir cliquer une par une"
+          >
+            <Rocket className="w-4 h-4 text-emerald-100 animate-pulse" />
+            Tout créer sur Teams (En masse)
+          </button>
+
+          <button
+            onClick={() => setIsRestrictionsModalOpen(true)}
+            className="px-3.5 py-2 rounded-xl bg-gradient-to-r from-purple-700 to-indigo-700 hover:from-purple-600 hover:to-indigo-600 text-white text-xs font-semibold flex items-center gap-1.5 shadow-md shadow-purple-600/20 transition active:scale-95 border border-purple-500/30"
+            title="Appliquer les restrictions strictes sur les membres des équipes (interdire création de canaux/apps, etc.)"
+          >
+            <ShieldCheck className="w-4 h-4 text-purple-200" />
+            Restrictions membres
+          </button>
+
+          <button
             onClick={() => setIsAdminModalOpen(true)}
             className="px-3.5 py-2 rounded-xl bg-gradient-to-r from-amber-600 to-orange-600 hover:from-amber-500 hover:to-orange-500 text-white text-xs font-semibold flex items-center gap-1.5 shadow-md shadow-amber-600/20 transition active:scale-95"
             title="Associer mjoubin@notredamedesmissions.com et les administrateurs Office en co-propriétaires de toutes les équipes"
           >
             <Shield className="w-4 h-4 text-amber-100" />
-            Co-propriété Admins Office
+            Co-propriété Admins
           </button>
 
           <button
             onClick={onApplyOfficialAssignments}
-            className="px-3.5 py-2 rounded-xl bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white text-xs font-semibold flex items-center gap-1.5 shadow-md shadow-emerald-600/20 transition active:scale-95"
+            className="px-3.5 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 text-xs font-semibold flex items-center gap-1.5 transition active:scale-95"
             title="Applique la grille officielle des équipes et professeurs par matière pour l'ensemble des 37 classes (document officiel UnDeuxTEMPS / Axess)"
           >
-            <UserCheck className="w-4 h-4 text-emerald-100" />
+            <UserCheck className="w-4 h-4 text-emerald-400" />
             Affecter Profs Officiels
           </button>
 
@@ -927,6 +1047,253 @@ export const TeamsTab: React.FC<TeamsTabProps> = ({
                   Sync Membres
                 </button>
               )}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Modal Création en Masse */}
+      {isBatchModalOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-sm">
+          <div className="bg-slate-900 border border-slate-700 rounded-2xl w-full max-w-lg shadow-2xl p-5 sm:p-6 space-y-4">
+            <div className="flex items-start justify-between">
+              <div className="flex items-center gap-2.5">
+                <div className="w-10 h-10 rounded-xl bg-emerald-500/20 text-emerald-400 flex items-center justify-center">
+                  <Rocket className="w-5 h-5" />
+                </div>
+                <div>
+                  <h3 className="text-base font-bold text-white">Création en masse Microsoft Teams</h3>
+                  <p className="text-xs text-slate-400">Automatisation complète sans devoir créer les équipes une par une</p>
+                </div>
+              </div>
+              <button
+                onClick={() => !isBatchRunning && setIsBatchModalOpen(false)}
+                disabled={isBatchRunning}
+                className="p-1 rounded-lg text-slate-400 hover:text-white hover:bg-slate-800"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            <div className="bg-slate-800/60 border border-slate-700/60 rounded-xl p-3.5 text-xs text-slate-300 space-y-2">
+              <div className="font-semibold text-white flex items-center gap-1.5 text-emerald-400">
+                <CheckCircle2 className="w-4 h-4" /> Traitement 100% automatisé inclus :
+              </div>
+              <ul className="list-disc pl-4 space-y-1 text-slate-300">
+                <li>Création du groupe unifié Microsoft 365 (`POST /groups`)</li>
+                <li><strong>Activation de l'équipe Teams (`PUT /groups/team`)</strong> pour visibilité immédiate dans Teams</li>
+                <li><strong>Application des restrictions membres strictes</strong> (aucun canal/app créé par les élèves)</li>
+                <li>Ajout de tous les élèves de la classe (`PATCH /groups`)</li>
+                <li>Attribution des co-propriétaires enseignants et administrateurs Office</li>
+              </ul>
+            </div>
+
+            <div className="space-y-2">
+              <label className="text-xs font-semibold text-slate-300">Périmètre de création :</label>
+              <div className="space-y-1.5 text-xs">
+                <label className="flex items-center gap-2 p-2.5 rounded-lg bg-slate-800/80 border border-slate-700 cursor-pointer hover:border-slate-600">
+                  <input
+                    type="radio"
+                    name="batchScope"
+                    value="class"
+                    checked={batchScope === 'class'}
+                    onChange={() => setBatchScope('class')}
+                    disabled={isBatchRunning}
+                    className="text-emerald-500"
+                  />
+                  <span>
+                    <strong>Classe sélectionnée uniquement</strong> ({classFilter !== 'all' ? `Classe ${classFilter}` : 'Classe 101 par défaut'})
+                  </span>
+                </label>
+                <label className="flex items-center gap-2 p-2.5 rounded-lg bg-slate-800/80 border border-slate-700 cursor-pointer hover:border-slate-600">
+                  <input
+                    type="radio"
+                    name="batchScope"
+                    value="pending"
+                    checked={batchScope === 'pending'}
+                    onChange={() => setBatchScope('pending')}
+                    disabled={isBatchRunning}
+                    className="text-emerald-500"
+                  />
+                  <span>
+                    <strong>Toutes les équipes en attente</strong> ({teams.filter(t => !t.m365TeamId).length} équipes non encore créées)
+                  </span>
+                </label>
+              </div>
+            </div>
+
+            {batchProgress && (
+              <div className="bg-slate-950 border border-slate-800 rounded-xl p-3.5 space-y-2 text-xs">
+                <div className="flex justify-between font-medium">
+                  <span className="text-slate-300">Progression : {batchProgress.current} / {batchProgress.total}</span>
+                  <span className="text-emerald-400 font-bold">{Math.round((batchProgress.current / batchProgress.total) * 100)}%</span>
+                </div>
+                <div className="w-full bg-slate-800 h-2 rounded-full overflow-hidden">
+                  <div
+                    className="bg-emerald-500 h-full transition-all duration-300"
+                    style={{ width: `${(batchProgress.current / batchProgress.total) * 100}%` }}
+                  />
+                </div>
+                <div className="text-slate-400 truncate">
+                  En cours : <span className="text-white font-mono">{batchProgress.teamName}</span>
+                </div>
+                <div className="flex gap-3 text-[11px] pt-1 border-t border-slate-800">
+                  <span className="text-emerald-400 font-semibold">{batchProgress.successCount} réussies</span>
+                  {batchProgress.failedCount > 0 && (
+                    <span className="text-rose-400 font-semibold">{batchProgress.failedCount} échecs</span>
+                  )}
+                </div>
+              </div>
+            )}
+
+            <div className="flex items-center justify-end gap-2 pt-2">
+              <button
+                onClick={() => setIsBatchModalOpen(false)}
+                disabled={isBatchRunning}
+                className="px-4 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-semibold"
+              >
+                Fermer
+              </button>
+              <button
+                onClick={handleStartBatchProvision}
+                disabled={isBatchRunning}
+                className="px-5 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-500 disabled:opacity-50 text-white text-xs font-bold flex items-center gap-2 shadow-lg shadow-emerald-600/30 transition"
+              >
+                {isBatchRunning ? (
+                  <>
+                    <RefreshCw className="w-4 h-4 animate-spin" />
+                    Création en cours...
+                  </>
+                ) : (
+                  <>
+                    <Rocket className="w-4 h-4" />
+                    Lancer la création en masse
+                  </>
+                )}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Modal Restrictions Membres */}
+      {isRestrictionsModalOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-sm">
+          <div className="bg-slate-900 border border-slate-700 rounded-2xl w-full max-w-lg shadow-2xl p-5 sm:p-6 space-y-4 max-h-[90vh] overflow-y-auto">
+            <div className="flex items-start justify-between">
+              <div className="flex items-center gap-2.5">
+                <div className="w-10 h-10 rounded-xl bg-purple-500/20 text-purple-400 flex items-center justify-center">
+                  <ShieldCheck className="w-5 h-5" />
+                </div>
+                <div>
+                  <h3 className="text-base font-bold text-white">Autorisations des membres (Restrictions Teams)</h3>
+                  <p className="text-xs text-slate-400">Paramétrage strict conforme au cahier des charges pédagogique</p>
+                </div>
+              </div>
+              <button
+                onClick={() => setIsRestrictionsModalOpen(false)}
+                className="p-1 rounded-lg text-slate-400 hover:text-white hover:bg-slate-800"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            <p className="text-xs text-slate-300">
+              Ces restrictions sont automatiquement injectées dans chaque équipe lors de sa création. Vous pouvez également les ré-appliquer sur l'ensemble des équipes déjà existantes :
+            </p>
+
+            {/* Checklist exactly matching user screenshot */}
+            <div className="bg-slate-950 border border-slate-800 rounded-xl p-4 space-y-2.5 text-xs text-slate-300">
+              <div className="text-[11px] font-bold uppercase tracking-wider text-slate-400 pb-1 border-b border-slate-800">
+                Autorisations des membres
+              </div>
+
+              <div className="flex items-center gap-2.5 opacity-60">
+                <Square className="w-4 h-4 text-slate-500 shrink-0" />
+                <span>Autoriser les membres à créer et mettre à jour des canaux (Désactivé)</span>
+              </div>
+
+              <div className="flex items-center gap-2.5 opacity-60 pl-6">
+                <Square className="w-4 h-4 text-slate-600 shrink-0" />
+                <span className="text-slate-400">Autoriser les membres à créer des canaux privés (Désactivé)</span>
+              </div>
+
+              <div className="flex items-center gap-2.5 opacity-60">
+                <Square className="w-4 h-4 text-slate-500 shrink-0" />
+                <span>Autoriser les membres à supprimer et restaurer des canaux (Désactivé)</span>
+              </div>
+
+              <div className="flex items-center gap-2.5 opacity-60">
+                <Square className="w-4 h-4 text-slate-500 shrink-0" />
+                <span>Autoriser les membres à ajouter et supprimer des applications (Désactivé)</span>
+              </div>
+
+              <div className="flex items-center gap-2.5 opacity-60">
+                <Square className="w-4 h-4 text-slate-500 shrink-0" />
+                <span>Autoriser les membres à charger des applications personnalisées (Désactivé)</span>
+              </div>
+
+              <div className="flex items-center gap-2.5 opacity-60">
+                <Square className="w-4 h-4 text-slate-500 shrink-0" />
+                <span>Autoriser les membres à créer, mettre à jour et supprimer des onglets (Désactivé)</span>
+              </div>
+
+              <div className="flex items-center gap-2.5 text-emerald-400 font-medium">
+                <CheckSquare className="w-4 h-4 text-emerald-400 shrink-0" />
+                <span>Les propriétaires peuvent supprimer tous les messages (Activé)</span>
+              </div>
+
+              <div className="flex items-center gap-2.5 opacity-60">
+                <Square className="w-4 h-4 text-slate-500 shrink-0" />
+                <span>Autoriser les membres à créer, mettre à jour et supprimer des connecteurs (Désactivé)</span>
+              </div>
+
+              <div className="flex items-center gap-2.5 text-emerald-400 font-medium">
+                <CheckSquare className="w-4 h-4 text-emerald-400 shrink-0" />
+                <span>Autoriser les membres à créer, modifier et supprimer des balises (Activé)</span>
+              </div>
+
+              <div className="flex items-center gap-2.5 text-emerald-400 font-medium">
+                <CheckSquare className="w-4 h-4 text-emerald-400 shrink-0" />
+                <span>Autoriser les membres à supprimer leurs messages (Activé)</span>
+              </div>
+
+              <div className="flex items-center gap-2.5 text-emerald-400 font-medium">
+                <CheckSquare className="w-4 h-4 text-emerald-400 shrink-0" />
+                <span>Autoriser les membres à modifier leurs messages (Activé)</span>
+              </div>
+            </div>
+
+            {enforceResult && (
+              <div className="p-3 rounded-xl bg-purple-950/60 border border-purple-800 text-xs text-purple-200">
+                {enforceResult}
+              </div>
+            )}
+
+            <div className="flex items-center justify-end gap-2 pt-2">
+              <button
+                onClick={() => setIsRestrictionsModalOpen(false)}
+                className="px-4 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-semibold"
+              >
+                Fermer
+              </button>
+              <button
+                onClick={handleApplyRestrictionsAll}
+                disabled={isEnforcingRestrictions}
+                className="px-5 py-2 rounded-xl bg-purple-600 hover:bg-purple-500 disabled:opacity-50 text-white text-xs font-bold flex items-center gap-2 shadow-lg shadow-purple-600/30 transition"
+              >
+                {isEnforcingRestrictions ? (
+                  <>
+                    <RefreshCw className="w-4 h-4 animate-spin" />
+                    Application en cours...
+                  </>
+                ) : (
+                  <>
+                    <ShieldCheck className="w-4 h-4" />
+                    Appliquer sur toutes les équipes Teams actives
+                  </>
+                )}
+              </button>
             </div>
           </div>
         </div>

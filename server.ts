@@ -1117,203 +1117,213 @@ app.post('/api/teams/bulk-add-admin-owners', (req: Request, res: Response) => {
   }
 });
 
-// 5d. Provision a Real Team on Microsoft 365 Cloud via Microsoft Graph
+// Exact Pedagogical Restrictions as specified in user guidelines (see screenshot):
+// - Interdire création / mise à jour / suppression de canaux
+// - Interdire création de canaux privés
+// - Interdire ajout / suppression d'applications
+// - Interdire création / modification d'onglets et connecteurs
+// - Autoriser les propriétaires à supprimer tous les messages
+// - Autoriser les membres à modifier et supprimer leurs messages
+const STRICT_PEDAGOGICAL_RESTRICTIONS = {
+  memberSettings: {
+    allowCreateUpdateChannels: false,
+    allowCreatePrivateChannels: false,
+    allowDeleteChannels: false,
+    allowAddRemoveApps: false,
+    allowCreateUpdateRemoveTabs: false,
+    allowCreateUpdateRemoveConnectors: false,
+  },
+  messagingSettings: {
+    allowOwnerDeleteMessages: true,
+    allowUserDeleteMessages: true,
+    allowUserEditMessages: true,
+    allowTeamMentions: true,
+    allowChannelMentions: true,
+  },
+  funSettings: {
+    allowGiphy: false,
+    allowStickersAndMemes: false,
+    allowCustomMemes: false,
+  },
+};
+
+// Core provision helper for single team
+async function provisionAndConfigureTeam(team: TeamItem, token: string) {
+  // 1. Determine Owners (assigned teachers + admins)
+  const ownerM365Ids: string[] = [];
+  if (team.assignedTeacherIds && team.assignedTeacherIds.length > 0) {
+    for (const tid of team.assignedTeacherIds) {
+      const assigned = db.users.find((u: UserItem) => (u.id === tid || u.m365Id === tid) && u.m365Id && !u.m365Id.startsWith('m365-demo'));
+      if (assigned && assigned.m365Id && !ownerM365Ids.includes(assigned.m365Id)) {
+        ownerM365Ids.push(assigned.m365Id);
+      }
+    }
+  }
+
+  if (ownerM365Ids.length === 0) {
+    const usersRes = await fetch("https://graph.microsoft.com/v1.0/users?$filter=userType eq 'Member'&$top=1", {
+      headers: { Authorization: `Bearer ${token}` }
+    });
+    const usersData = await usersRes.json();
+    if (usersData.value && usersData.value.length > 0) {
+      ownerM365Ids.push(usersData.value[0].id);
+    }
+  }
+
+  if (ownerM365Ids.length === 0) {
+    throw new Error('Aucun compte propriétaire valide sur Microsoft 365');
+  }
+
+  // 2. Check if group already exists to prevent duplicate groups
+  let groupId: string = team.m365TeamId && !team.m365TeamId.startsWith('m365-demo') ? team.m365TeamId : '';
+  if (!groupId) {
+    const searchRes = await fetch(`https://graph.microsoft.com/v1.0/groups?$filter=displayName eq '${encodeURIComponent(team.name)}'&$select=id,displayName`, {
+      headers: { Authorization: `Bearer ${token}` }
+    });
+    if (searchRes.ok) {
+      const searchData = await searchRes.json();
+      if (searchData.value && searchData.value.length > 0) {
+        groupId = searchData.value[0].id;
+      }
+    }
+  }
+
+  if (!groupId) {
+    const cleanSubject = team.subjectName.toLowerCase().replace(/[^a-z0-9]/g, '');
+    const cleanClass = team.classCode.toLowerCase().replace(/[^a-z0-9]/g, '');
+    const nickname = `ndm-${cleanClass}-${cleanSubject}-${Date.now().toString(36)}`;
+
+    const groupPayload = {
+      displayName: team.name,
+      description: `Équipe Microsoft Teams Classe ${team.classCode} - ${team.subjectName} (Notre-Dame des Missions)`,
+      groupTypes: ['Unified'],
+      mailEnabled: true,
+      mailNickname: nickname,
+      securityEnabled: false,
+      'owners@odata.bind': ownerM365Ids.slice(0, 20).map(oid => `https://graph.microsoft.com/v1.0/users/${oid}`)
+    };
+
+    const groupRes = await fetch('https://graph.microsoft.com/v1.0/groups', {
+      method: 'POST',
+      headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
+      body: JSON.stringify(groupPayload),
+    });
+
+    const groupData = await groupRes.json();
+    if (!groupRes.ok || !groupData.id) {
+      throw new Error(groupData.error?.message || 'Erreur création groupe M365');
+    }
+    groupId = groupData.id;
+  }
+
+  // 3. Ensure all owners bound
+  for (const oid of ownerM365Ids) {
+    try {
+      await fetch(`https://graph.microsoft.com/v1.0/groups/${groupId}/owners/$ref`, {
+        method: 'POST',
+        headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
+        body: JSON.stringify({ '@odata.id': `https://graph.microsoft.com/v1.0/users/${oid}` }),
+      });
+    } catch (e) {
+      // Ignored if already owner
+    }
+  }
+
+  // 4. Teamify with EXACT STRICT PEDAGOGICAL RESTRICTIONS
+  let teamWebUrl = '';
+  for (let attempt = 1; attempt <= 4; attempt++) {
+    try {
+      const checkTeamRes = await fetch(`https://graph.microsoft.com/v1.0/groups/${groupId}/team`, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+
+      if (checkTeamRes.ok) {
+        const tInfo = await checkTeamRes.json();
+        teamWebUrl = tInfo.webUrl || '';
+        // Apply restrictions on existing team
+        await fetch(`https://graph.microsoft.com/v1.0/teams/${groupId}`, {
+          method: 'PATCH',
+          headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
+          body: JSON.stringify(STRICT_PEDAGOGICAL_RESTRICTIONS),
+        });
+        break;
+      }
+
+      const putTeamRes = await fetch(`https://graph.microsoft.com/v1.0/groups/${groupId}/team`, {
+        method: 'PUT',
+        headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
+        body: JSON.stringify(STRICT_PEDAGOGICAL_RESTRICTIONS),
+      });
+
+      if (putTeamRes.status === 201 || putTeamRes.status === 200) {
+        const putData = await putTeamRes.json();
+        teamWebUrl = putData.webUrl || '';
+        break;
+      }
+
+      await new Promise(r => setTimeout(r, 2500));
+    } catch (err) {
+      await new Promise(r => setTimeout(r, 2500));
+    }
+  }
+
+  // 5. Add ALL Class Students in batches of 15
+  const classStudents = db.users.filter((u: UserItem) => 
+    u.classCode === team.classCode && 
+    u.role === 'student' && 
+    u.m365Id && 
+    !u.m365Id.startsWith('m365-demo')
+  );
+
+  let addedMembers = 0;
+  for (let i = 0; i < classStudents.length; i += 15) {
+    const chunk = classStudents.slice(i, i + 15);
+    try {
+      const patchRes = await fetch(`https://graph.microsoft.com/v1.0/groups/${groupId}`, {
+        method: 'PATCH',
+        headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          'members@odata.bind': chunk.map((s: UserItem) => `https://graph.microsoft.com/v1.0/directoryObjects/${s.m365Id}`)
+        }),
+      });
+
+      if (patchRes.ok || patchRes.status === 204) {
+        addedMembers += chunk.length;
+      } else {
+        const errTxt = await patchRes.text();
+        if (errTxt.includes('already exist')) {
+          addedMembers += chunk.length;
+        }
+      }
+    } catch (err) {
+      // Non-blocking
+    }
+  }
+
+  // 6. Update local DB
+  team.m365TeamId = groupId;
+  team.status = 'synced';
+  team.lastSync = new Date().toISOString();
+  team.memberCount = classStudents.length;
+
+  return { groupId, teamWebUrl, addedMembers, totalStudents: classStudents.length };
+}
+
+// 5d. Provision a Real Team on Microsoft 365 Cloud via Microsoft Graph (Single)
 app.post('/api/teams/:id/provision-m365', async (req: Request, res: Response) => {
   const team = db.teams.find((t: TeamItem) => t.id === req.params.id);
   if (!team) return res.status(404).json({ success: false, error: 'Équipe introuvable' });
 
   try {
     const token = await fetchGraphToken();
-
-    // 1. Determine Owners (all assigned teachers AND assigned admins)
-    const ownerM365Ids: string[] = [];
-    if (team.assignedTeacherIds && team.assignedTeacherIds.length > 0) {
-      for (const tid of team.assignedTeacherIds) {
-        const assigned = db.users.find((u: UserItem) => (u.id === tid || u.m365Id === tid) && u.m365Id && !u.m365Id.startsWith('m365-demo'));
-        if (assigned && assigned.m365Id && !ownerM365Ids.includes(assigned.m365Id)) {
-          ownerM365Ids.push(assigned.m365Id);
-        }
-      }
-    }
-
-    if (ownerM365Ids.length === 0) {
-      // Pick first active member teacher or admin from M365
-      const usersRes = await fetch('https://graph.microsoft.com/v1.0/users?$filter=userType+eq+\'Member\'&$top=1', {
-        headers: { Authorization: `Bearer ${token}` }
-      });
-      const usersData = await usersRes.json();
-      if (usersData.value && usersData.value.length > 0) {
-        ownerM365Ids.push(usersData.value[0].id);
-      }
-    }
-
-    if (ownerM365Ids.length === 0) {
-      return res.status(400).json({ success: false, error: 'Aucun compte administrateur/enseignant valide trouvé sur Microsoft 365 pour devenir propriétaire.' });
-    }
-
-    // 2. Check if M365 Group already exists (prevents duplicate group creation)
-    let groupId: string | null = team.m365TeamId && !team.m365TeamId.startsWith('m365-demo') ? team.m365TeamId : null;
-    
-    if (!groupId) {
-      const searchRes = await fetch(`https://graph.microsoft.com/v1.0/groups?$filter=displayName eq '${encodeURIComponent(team.name)}'&$select=id,displayName`, {
-        headers: { Authorization: `Bearer ${token}` }
-      });
-      if (searchRes.ok) {
-        const searchData = await searchRes.json();
-        if (searchData.value && searchData.value.length > 0) {
-          groupId = searchData.value[0].id;
-        }
-      }
-    }
-
-    if (!groupId) {
-      // Create M365 Unified Group
-      const cleanSubject = team.subjectName.toLowerCase().replace(/[^a-z0-9]/g, '');
-      const cleanClass = team.classCode.toLowerCase().replace(/[^a-z0-9]/g, '');
-      const nickname = `ndm-${cleanClass}-${cleanSubject}-${Date.now().toString(36)}`;
-
-      const groupPayload = {
-        displayName: team.name,
-        description: `Équipe Microsoft Teams Classe ${team.classCode} - ${team.subjectName} (Notre-Dame des Missions)`,
-        groupTypes: ['Unified'],
-        mailEnabled: true,
-        mailNickname: nickname,
-        securityEnabled: false,
-        'owners@odata.bind': ownerM365Ids.slice(0, 20).map(oid => `https://graph.microsoft.com/v1.0/users/${oid}`)
-      };
-
-      const groupRes = await fetch('https://graph.microsoft.com/v1.0/groups', {
-        method: 'POST',
-        headers: {
-          Authorization: `Bearer ${token}`,
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(groupPayload),
-      });
-
-      const groupData = await groupRes.json();
-      if (!groupRes.ok || !groupData.id) {
-        return res.status(400).json({
-          success: false,
-          error: groupData.error?.message || 'Erreur lors de la création du groupe M365',
-        });
-      }
-      groupId = groupData.id;
-    }
-
-    // 3. Ensure all extra owners are bound
-    for (const oid of ownerM365Ids) {
-      try {
-        await fetch(`https://graph.microsoft.com/v1.0/groups/${groupId}/owners/$ref`, {
-          method: 'POST',
-          headers: {
-            Authorization: `Bearer ${token}`,
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({ '@odata.id': `https://graph.microsoft.com/v1.0/users/${oid}` }),
-        });
-      } catch (e) {
-        // Ignored if already owner
-      }
-    }
-
-    // 4. CRITICAL: TEAMIFY THE GROUP via PUT /groups/{id}/team
-    // Without this step, the M365 group is not an active Team and does NOT show up in Teams client!
-    let teamWebUrl = '';
-    let teamCreated = false;
-
-    for (let attempt = 1; attempt <= 4; attempt++) {
-      try {
-        // Check if team already exists
-        const checkTeamRes = await fetch(`https://graph.microsoft.com/v1.0/groups/${groupId}/team`, {
-          headers: { Authorization: `Bearer ${token}` }
-        });
-
-        if (checkTeamRes.ok) {
-          const tInfo = await checkTeamRes.json();
-          teamWebUrl = tInfo.webUrl || '';
-          teamCreated = true;
-          break;
-        }
-
-        // Send PUT /groups/{id}/team to activate Microsoft Teams
-        const putTeamRes = await fetch(`https://graph.microsoft.com/v1.0/groups/${groupId}/team`, {
-          method: 'PUT',
-          headers: {
-            Authorization: `Bearer ${token}`,
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({
-            memberSettings: { allowCreateUpdateChannels: true },
-            messagingSettings: { allowUserEditMessages: true, allowUserDeleteMessages: true },
-            funSettings: { allowGiphy: true, giphyContentRating: 'strict' }
-          })
-        });
-
-        if (putTeamRes.status === 201 || putTeamRes.status === 200) {
-          const putData = await putTeamRes.json();
-          teamWebUrl = putData.webUrl || '';
-          teamCreated = true;
-          break;
-        }
-
-        // Wait 2.5s for Azure AD replication before retry
-        await new Promise(r => setTimeout(r, 2500));
-      } catch (err) {
-        await new Promise(r => setTimeout(r, 2500));
-      }
-    }
-
-    // 5. Add ALL Class Students as Members in batches
-    const classStudents = db.users.filter((u: UserItem) => 
-      u.classCode === team.classCode && 
-      u.role === 'student' && 
-      u.m365Id && 
-      !u.m365Id.startsWith('m365-demo')
-    );
-
-    let addedMembers = 0;
-    // Add in batches of 15 using PATCH /v1.0/groups/{groupId}
-    for (let i = 0; i < classStudents.length; i += 15) {
-      const chunk = classStudents.slice(i, i + 15);
-      try {
-        const patchRes = await fetch(`https://graph.microsoft.com/v1.0/groups/${groupId}`, {
-          method: 'PATCH',
-          headers: {
-            Authorization: `Bearer ${token}`,
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({
-            'members@odata.bind': chunk.map((s: UserItem) => `https://graph.microsoft.com/v1.0/directoryObjects/${s.m365Id}`)
-          }),
-        });
-
-        if (patchRes.ok || patchRes.status === 204) {
-          addedMembers += chunk.length;
-        } else {
-          // If some already existed, consider them attached
-          const errTxt = await patchRes.text();
-          if (errTxt.includes('already exist')) {
-            addedMembers += chunk.length;
-          }
-        }
-      } catch (err) {
-        // Non-blocking
-      }
-    }
-
-    // 6. Update team in local DB
-    team.m365TeamId = groupId;
-    team.status = 'synced';
-    team.lastSync = new Date().toISOString();
-    team.memberCount = classStudents.length;
+    const result = await provisionAndConfigureTeam(team, token);
 
     db.logs.unshift({
       id: 'log-' + Date.now(),
       timestamp: new Date().toISOString().replace('T', ' ').substring(0, 19),
       action: 'CRÉATION_TEAMS',
       target: team.name,
-      details: `Équipe Microsoft Teams ACTIVÉE avec succès (ID: ${groupId}). Propriétaire(s): ${ownerM365Ids.length} assigné(s), ${addedMembers} élèves rattachés. Visible dans Teams.`,
+      details: `Équipe Microsoft Teams ACTIVÉE avec restrictions membres strictes (ID: ${result.groupId}). ${result.addedMembers} élèves rattachés.`,
       status: 'Réussi',
       source: 'GraphAPI',
     });
@@ -1321,15 +1331,139 @@ app.post('/api/teams/:id/provision-m365', async (req: Request, res: Response) =>
     saveDatabase(db);
     res.json({
       success: true,
-      m365TeamId: groupId,
+      m365TeamId: result.groupId,
       team,
-      message: `Équipe "${team.name}" activée et visible sur Microsoft Teams avec succès !`,
+      message: `Équipe "${team.name}" activée sur Teams avec restrictions membres strictes !`,
     });
   } catch (err: any) {
     res.status(500).json({
       success: false,
       error: err.message || 'Erreur communication Microsoft Graph',
     });
+  }
+});
+
+// 5e. Batch Provisioning (Création en masse par classe ou globale)
+app.post('/api/teams/provision-batch', async (req: Request, res: Response) => {
+  const { classCode, teamIds, allPending } = req.body;
+
+  let targetTeams: TeamItem[] = [];
+  if (classCode) {
+    targetTeams = db.teams.filter((t: TeamItem) => t.classCode === classCode && (!t.m365TeamId || t.status !== 'synced'));
+  } else if (teamIds && Array.isArray(teamIds) && teamIds.length > 0) {
+    targetTeams = db.teams.filter((t: TeamItem) => teamIds.includes(t.id));
+  } else if (allPending) {
+    targetTeams = db.teams.filter((t: TeamItem) => !t.m365TeamId || t.status !== 'synced');
+  }
+
+  if (targetTeams.length === 0) {
+    return res.json({
+      success: true,
+      message: 'Aucune équipe en attente de création trouvée.',
+      processedCount: 0,
+      successCount: 0,
+      failedCount: 0,
+    });
+  }
+
+  // Cap batch size to 30 per run to prevent timeout/throttling
+  const batchTeams = targetTeams.slice(0, 30);
+  let successCount = 0;
+  let failedCount = 0;
+  const results: { teamId: string; teamName: string; success: boolean; error?: string }[] = [];
+
+  try {
+    const token = await fetchGraphToken();
+
+    for (const team of batchTeams) {
+      try {
+        await provisionAndConfigureTeam(team, token);
+        successCount++;
+        results.push({ teamId: team.id, teamName: team.name, success: true });
+        // Anti-throttling delay between Graph calls
+        await new Promise(r => setTimeout(r, 1200));
+      } catch (err: any) {
+        failedCount++;
+        results.push({ teamId: team.id, teamName: team.name, success: false, error: err.message });
+      }
+    }
+
+    db.logs.unshift({
+      id: 'log-' + Date.now(),
+      timestamp: new Date().toISOString().replace('T', ' ').substring(0, 19),
+      action: 'CRÉATION_MASSE',
+      target: classCode ? `Classe ${classCode}` : 'Lot d\'équipes',
+      details: `Création en masse terminée : ${successCount}/${batchTeams.length} équipes créées avec restrictions membres strictes.`,
+      status: failedCount === 0 ? 'Réussi' : 'Avertissement',
+      source: 'GraphAPI',
+    });
+
+    saveDatabase(db);
+    res.json({
+      success: true,
+      message: `${successCount} équipe(s) créée(s) avec succès sur Microsoft Teams !`,
+      processedCount: batchTeams.length,
+      successCount,
+      failedCount,
+      remainingCount: targetTeams.length - batchTeams.length,
+      results,
+    });
+  } catch (err: any) {
+    res.status(500).json({ success: false, error: err.message || 'Erreur lors du traitement en masse' });
+  }
+});
+
+// 5f. Enforce Restrictions on Teams (Appliquer les restrictions de la capture d'écran)
+app.post('/api/teams/enforce-restrictions', async (req: Request, res: Response) => {
+  const { teamId, all } = req.body;
+
+  try {
+    const token = await fetchGraphToken();
+    let teamsToPatch: TeamItem[] = [];
+
+    if (teamId) {
+      const t = db.teams.find((item: TeamItem) => item.id === teamId || item.m365TeamId === teamId);
+      if (t && t.m365TeamId) teamsToPatch.push(t);
+    } else if (all) {
+      teamsToPatch = db.teams.filter((item: TeamItem) => Boolean(item.m365TeamId));
+    }
+
+    let successCount = 0;
+    for (const team of teamsToPatch) {
+      if (!team.m365TeamId) continue;
+      try {
+        const patchRes = await fetch(`https://graph.microsoft.com/v1.0/teams/${team.m365TeamId}`, {
+          method: 'PATCH',
+          headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
+          body: JSON.stringify(STRICT_PEDAGOGICAL_RESTRICTIONS),
+        });
+        if (patchRes.ok || patchRes.status === 204) {
+          successCount++;
+        }
+        await new Promise(r => setTimeout(r, 400));
+      } catch (e) {
+        // continue
+      }
+    }
+
+    db.logs.unshift({
+      id: 'log-' + Date.now(),
+      timestamp: new Date().toISOString().replace('T', ' ').substring(0, 19),
+      action: 'SÉCURISATION',
+      target: all ? 'Toutes les équipes' : (teamsToPatch[0]?.name || 'Équipe'),
+      details: `Restrictions membres strictes appliquées sur ${successCount} équipe(s) Microsoft Teams.`,
+      status: 'Réussi',
+      source: 'Admin',
+    });
+    saveDatabase(db);
+
+    res.json({
+      success: true,
+      message: `Restrictions membres appliquées avec succès sur ${successCount} équipe(s) !`,
+      count: successCount,
+    });
+  } catch (err: any) {
+    res.status(500).json({ success: false, error: err.message || 'Erreur application des restrictions' });
   }
 });
 
