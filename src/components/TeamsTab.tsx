@@ -30,7 +30,8 @@ import {
   Zap,
   Sliders,
   Edit3,
-  AlertTriangle
+  AlertTriangle,
+  MessageSquare
 } from 'lucide-react';
 import type { TeamItem, ClassItem, UserItem, MemberRestrictionsSettings } from '../types/index.ts';
 import { api } from '../services/api.ts';
@@ -177,6 +178,7 @@ export const TeamsTab: React.FC<TeamsTabProps> = ({
   const [targetTeamIdForRestrictions, setTargetTeamIdForRestrictions] = useState<string>('');
   const [saveAsDefaultOption, setSaveAsDefaultOption] = useState<boolean>(true);
   const [customRestrictions, setCustomRestrictions] = useState<MemberRestrictionsSettings>({
+    generalChannelModeration: 'ownersOnly',
     allowCreateUpdateChannels: false,
     allowCreatePrivateChannels: false,
     allowDeleteChannels: false,
@@ -195,7 +197,15 @@ export const TeamsTab: React.FC<TeamsTabProps> = ({
       setRestrictionsScope('single');
       setTargetTeamIdForRestrictions(targetTeam.id);
       if (targetTeam.memberRestrictions) {
-        setCustomRestrictions({ ...targetTeam.memberRestrictions });
+        setCustomRestrictions({
+          generalChannelModeration: 'ownersOnly',
+          ...targetTeam.memberRestrictions
+        });
+      } else {
+        setCustomRestrictions(prev => ({
+          ...prev,
+          generalChannelModeration: 'ownersOnly'
+        }));
       }
     } else {
       setRestrictionsScope('all');
@@ -220,6 +230,7 @@ export const TeamsTab: React.FC<TeamsTabProps> = ({
 
   const handleResetToStrictPreset = () => {
     setCustomRestrictions({
+      generalChannelModeration: 'ownersOnly',
       allowCreateUpdateChannels: false,
       allowCreatePrivateChannels: false,
       allowDeleteChannels: false,
@@ -479,10 +490,10 @@ export const TeamsTab: React.FC<TeamsTabProps> = ({
           <button
             onClick={() => handleOpenRestrictionsModal()}
             className="px-3.5 py-2 rounded-xl bg-gradient-to-r from-purple-700 to-indigo-700 hover:from-purple-600 hover:to-indigo-600 text-white text-xs font-semibold flex items-center gap-1.5 shadow-md shadow-purple-600/20 transition active:scale-95 border border-purple-500/30"
-            title="Choisir et appliquer les autorisations / restrictions membres (pour une ou toutes les équipes, et par défaut)"
+            title="Choisir et appliquer les préférences de modération du canal Général et restrictions membres (pour un groupe ou pour l'ensemble)"
           >
             <ShieldCheck className="w-4 h-4 text-purple-200" />
-            Autorisations membres
+            Paramètres & Modération
           </button>
 
           <button
@@ -664,6 +675,26 @@ export const TeamsTab: React.FC<TeamsTabProps> = ({
                           Prêt à créer
                         </span>
                       )}
+
+                      {/* Badge Modération Canal Général */}
+                      <span
+                        className={`px-2 py-0.5 rounded text-[10px] font-medium border flex items-center gap-1 cursor-pointer transition ${
+                          t.memberRestrictions?.generalChannelModeration === 'everyone'
+                            ? 'bg-blue-500/10 text-blue-300 border-blue-500/20 hover:bg-blue-500/20'
+                            : t.memberRestrictions?.generalChannelModeration === 'everyoneWithAlert'
+                            ? 'bg-amber-500/10 text-amber-300 border-amber-500/20 hover:bg-amber-500/20'
+                            : 'bg-purple-500/10 text-purple-300 border-purple-500/20 hover:bg-purple-500/20'
+                        }`}
+                        title="Préférence de modération du canal Général (cliquez pour configurer)"
+                        onClick={() => handleOpenRestrictionsModal(t)}
+                      >
+                        <MessageSquare className="w-2.5 h-2.5" />
+                        {t.memberRestrictions?.generalChannelModeration === 'everyone'
+                          ? 'Général : Tous'
+                          : t.memberRestrictions?.generalChannelModeration === 'everyoneWithAlert'
+                          ? 'Général : Alerte'
+                          : 'Général : Propriétaires'}
+                      </span>
                     </div>
                     <h3 className="font-bold text-white text-sm sm:text-base mt-1.5 truncate" title={t.name}>
                       {t.name}
@@ -1497,6 +1528,97 @@ export const TeamsTab: React.FC<TeamsTabProps> = ({
                 >
                   Profil strict recommandé
                 </button>
+              </div>
+            </div>
+
+            {/* Section Modération du Canal Général — Conforme à la capture d'écran Microsoft Teams */}
+            <div className="bg-slate-950 border border-slate-800 rounded-xl p-4 space-y-3 text-xs text-slate-200">
+              <div className="flex items-start justify-between pb-2 border-b border-slate-800">
+                <div>
+                  <div className="flex items-center gap-1.5 text-purple-400 font-bold uppercase tracking-wider text-[11px]">
+                    <MessageSquare className="w-3.5 h-3.5" />
+                    Modération — Définir les préférences de modération de canal
+                  </div>
+                  <p className="text-[11px] text-slate-400 mt-0.5">
+                    Contrôle des autorisations de publication sur le canal principal « Général » de l'équipe
+                  </p>
+                </div>
+                <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-slate-800 text-purple-300 border border-slate-700">
+                  Canal Général
+                </span>
+              </div>
+
+              <div className="space-y-2">
+                <span className="text-xs font-semibold text-white block">Canal général :</span>
+
+                {/* Option 1: Tout le monde peut publier des messages */}
+                <label className={`flex items-start gap-3 p-2.5 rounded-lg border cursor-pointer transition ${
+                  customRestrictions.generalChannelModeration === 'everyone'
+                    ? 'bg-purple-950/40 border-purple-500/60 text-white'
+                    : 'bg-slate-900/60 border-slate-800 hover:border-slate-700 text-slate-300'
+                }`}>
+                  <input
+                    type="radio"
+                    name="generalChannelModeration"
+                    value="everyone"
+                    checked={customRestrictions.generalChannelModeration === 'everyone'}
+                    onChange={() => setCustomRestrictions(prev => ({ ...prev, generalChannelModeration: 'everyone' }))}
+                    className="mt-0.5 text-purple-600 focus:ring-0 bg-slate-900 border-slate-700 cursor-pointer"
+                  />
+                  <div>
+                    <div className="font-semibold text-white">Tout le monde peut publier des messages</div>
+                    <div className="text-[11px] text-slate-400">Tous les membres (élèves et professeurs) peuvent publier librement dans le canal général.</div>
+                  </div>
+                </label>
+
+                {/* Option 2: Tout le monde peut publier dans le canal ; afficher l'alerte */}
+                <label className={`flex items-start gap-3 p-2.5 rounded-lg border cursor-pointer transition ${
+                  customRestrictions.generalChannelModeration === 'everyoneWithAlert'
+                    ? 'bg-purple-950/40 border-purple-500/60 text-white'
+                    : 'bg-slate-900/60 border-slate-800 hover:border-slate-700 text-slate-300'
+                }`}>
+                  <input
+                    type="radio"
+                    name="generalChannelModeration"
+                    value="everyoneWithAlert"
+                    checked={customRestrictions.generalChannelModeration === 'everyoneWithAlert'}
+                    onChange={() => setCustomRestrictions(prev => ({ ...prev, generalChannelModeration: 'everyoneWithAlert' }))}
+                    className="mt-0.5 text-purple-600 focus:ring-0 bg-slate-900 border-slate-700 cursor-pointer"
+                  />
+                  <div>
+                    <div className="font-semibold text-white">
+                      Tout le monde peut publier dans le canal ; afficher l'alerte indiquant que tous les membres seront avertis des publications (recommandé pour les équipes de grande taille)
+                    </div>
+                    <div className="text-[11px] text-slate-400">Avertit chaque membre qu'une notification générale sera envoyée à toute l'équipe.</div>
+                  </div>
+                </label>
+
+                {/* Option 3: Seuls les propriétaires peuvent publier des messages */}
+                <label className={`flex items-start gap-3 p-2.5 rounded-lg border cursor-pointer transition ${
+                  (customRestrictions.generalChannelModeration || 'ownersOnly') === 'ownersOnly'
+                    ? 'bg-purple-950/40 border-purple-500/60 text-white'
+                    : 'bg-slate-900/60 border-slate-800 hover:border-slate-700 text-slate-300'
+                }`}>
+                  <input
+                    type="radio"
+                    name="generalChannelModeration"
+                    value="ownersOnly"
+                    checked={(customRestrictions.generalChannelModeration || 'ownersOnly') === 'ownersOnly'}
+                    onChange={() => setCustomRestrictions(prev => ({ ...prev, generalChannelModeration: 'ownersOnly' }))}
+                    className="mt-0.5 text-purple-600 focus:ring-0 bg-slate-900 border-slate-700 cursor-pointer"
+                  />
+                  <div>
+                    <div className="font-semibold text-white flex items-center gap-1.5 flex-wrap">
+                      <span>Seuls les propriétaires peuvent publier des messages</span>
+                      <span className="px-1.5 py-0.5 text-[10px] font-bold rounded bg-emerald-500/20 text-emerald-300 border border-emerald-500/30">
+                        Recommandé en Milieu Scolaire
+                      </span>
+                    </div>
+                    <div className="text-[11px] text-slate-400">
+                      Canal dédié aux annonces et aux cours : seuls les professeurs et administrateurs peuvent initier des messages. Les élèves ne peuvent pas polluer le fil.
+                    </div>
+                  </div>
+                </label>
               </div>
             </div>
 

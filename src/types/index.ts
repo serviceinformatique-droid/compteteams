@@ -50,7 +50,10 @@ export interface UserItem {
   lastSeen?: string;
 }
 
+export type GeneralChannelModeration = 'everyone' | 'everyoneWithAlert' | 'ownersOnly';
+
 export interface MemberRestrictionsSettings {
+  generalChannelModeration?: GeneralChannelModeration;
   allowCreateUpdateChannels: boolean;
   allowCreatePrivateChannels: boolean;
   allowDeleteChannels: boolean;

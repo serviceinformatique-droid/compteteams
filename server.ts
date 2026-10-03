@@ -1376,6 +1376,7 @@ app.post('/api/teams/bulk-add-admin-owners', (req: Request, res: Response) => {
 
 // Exact Pedagogical Restrictions Settings conforming to guidelines (see user screenshot)
 const DEFAULT_RESTRICTIONS_SETTINGS = {
+  generalChannelModeration: 'ownersOnly', // 'everyone' | 'everyoneWithAlert' | 'ownersOnly' (Canal général : Seuls les propriétaires peuvent publier)
   allowCreateUpdateChannels: false,
   allowCreatePrivateChannels: false,
   allowDeleteChannels: false,

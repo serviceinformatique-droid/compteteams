@@ -151,12 +151,20 @@ C'est une **sécurité essentielle** : l'application ne crée pas aveuglément 2
 
 ---
 
-## 🔒 7. Restrictions Strictes des Membres (Profil Pédagogique Conforme)
+## 🔒 7. Restrictions Strictes & Modération du Canal Général (Profil Conforme)
 
-Toutes les équipes créées respectent à 100% le paramétrage de sécurité requis :
+L'application intègre le panneau exact de gestion des paramètres et de modération Microsoft Teams, configurable **pour une équipe isolée** ou **pour l'ensemble des 565 équipes**, avec **mémorisation par défaut pour toutes les nouvelles équipes créées** :
 
+### A. Modération du Canal Général (Préférences de publication) :
+Conforme à l'écran officiel des paramètres du canal Général dans Microsoft Teams :
+* 🔵 **« Tout le monde peut publier des messages »** : Tout élève et enseignant peut initier une discussion.
+* 🔵 **« Tout le monde peut publier dans le canal ; afficher l'alerte indiquant que tous les membres seront avertis »** : Recommandé pour grandes équipes avec rappel de notification.
+* 🔵 **« Seuls les propriétaires peuvent publier des messages » (Recommandé Établissement Scolaire)** : Seuls les enseignants et les administrateurs Office peuvent créer de nouvelles publications. Les élèves ne peuvent pas polluer le fil d'annonces officiel.
+
+### B. Autorisations des Membres Teams (Graph API) :
 | Paramètre Teams (Graph API) | Valeur Appliquée | Contexte Pédagogique |
 |---|---|---|
+| `generalChannelModeration` | **`ownersOnly`** | **Seuls les propriétaires (profs/admins) publient sur le canal Général** |
 | `allowCreateUpdateChannels` | **Désactivé (`false`)** | Les élèves ne peuvent ni créer ni renommer de canaux |
 | `allowCreatePrivateChannels` | **Désactivé (`false`)** | Interdiction formelle de canaux privés entre élèves |
 | `allowDeleteChannels` | **Désactivé (`false`)** | Les élèves ne peuvent pas supprimer de canaux |

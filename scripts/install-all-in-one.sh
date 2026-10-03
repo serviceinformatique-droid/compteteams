@@ -94,7 +94,8 @@ if [ -f "package.json" ]; then
   systemctl restart ndm-teams.service
 fi
 
-# Génération systématique du README.md à jour
+# Génération systématique du README.md à jour si absent
+if [ ! -f "/opt/ndm-teams-manager/README.md" ]; then
 cat << 'README_EOF' > /opt/ndm-teams-manager/README.md
 # NDM Teams Manager — Gestion Automatique des Équipes Microsoft Teams
 
@@ -171,6 +172,7 @@ journalctl -u ndm-teams -f       # Suivi des logs en temps réel
   ./scripts/push-github.sh "Mise à jour NDM Teams Manager"
   ```
 README_EOF
+fi
 
 IP_ADDR=$(hostname -I 2>/dev/null | awk '{print $1}' || echo "IP_LXC")
 
