@@ -50,6 +50,20 @@ export interface UserItem {
   lastSeen?: string;
 }
 
+export interface MemberRestrictionsSettings {
+  allowCreateUpdateChannels: boolean;
+  allowCreatePrivateChannels: boolean;
+  allowDeleteChannels: boolean;
+  allowAddRemoveApps: boolean;
+  allowCustomApps: boolean;
+  allowCreateUpdateRemoveTabs: boolean;
+  allowOwnerDeleteMessages: boolean;
+  allowCreateUpdateRemoveConnectors: boolean;
+  allowUserCreateUpdateTags: boolean;
+  allowUserDeleteMessages: boolean;
+  allowUserEditMessages: boolean;
+}
+
 export interface TeamItem {
   id: string;
   m365TeamId: string;
@@ -67,6 +81,7 @@ export interface TeamItem {
   isClassTeam: boolean; // Education Class Template vs Standard
   lastSync?: string;
   errorMessage?: string;
+  memberRestrictions?: MemberRestrictionsSettings;
 }
 
 export interface SimulationAction {

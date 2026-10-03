@@ -1374,35 +1374,47 @@ app.post('/api/teams/bulk-add-admin-owners', (req: Request, res: Response) => {
   }
 });
 
-// Exact Pedagogical Restrictions as specified in user guidelines (see screenshot):
-// - Interdire création / mise à jour / suppression de canaux
-// - Interdire création de canaux privés
-// - Interdire ajout / suppression d'applications
-// - Interdire création / modification d'onglets et connecteurs
-// - Autoriser les propriétaires à supprimer tous les messages
-// - Autoriser les membres à modifier et supprimer leurs messages
-const STRICT_PEDAGOGICAL_RESTRICTIONS = {
-  memberSettings: {
-    allowCreateUpdateChannels: false,
-    allowCreatePrivateChannels: false,
-    allowDeleteChannels: false,
-    allowAddRemoveApps: false,
-    allowCreateUpdateRemoveTabs: false,
-    allowCreateUpdateRemoveConnectors: false,
-  },
-  messagingSettings: {
-    allowOwnerDeleteMessages: true,
-    allowUserDeleteMessages: true,
-    allowUserEditMessages: true,
-    allowTeamMentions: true,
-    allowChannelMentions: true,
-  },
-  funSettings: {
-    allowGiphy: false,
-    allowStickersAndMemes: false,
-    allowCustomMemes: false,
-  },
+// Exact Pedagogical Restrictions Settings conforming to guidelines (see user screenshot)
+const DEFAULT_RESTRICTIONS_SETTINGS = {
+  allowCreateUpdateChannels: false,
+  allowCreatePrivateChannels: false,
+  allowDeleteChannels: false,
+  allowAddRemoveApps: false,
+  allowCustomApps: false,
+  allowCreateUpdateRemoveTabs: false,
+  allowOwnerDeleteMessages: true,
+  allowCreateUpdateRemoveConnectors: false,
+  allowUserCreateUpdateTags: true,
+  allowUserDeleteMessages: true,
+  allowUserEditMessages: true,
 };
+
+function formatGraphSettingsPayload(customSettings?: any) {
+  const defaults = db.config.defaultTeamSettings || DEFAULT_RESTRICTIONS_SETTINGS;
+  const s = { ...DEFAULT_RESTRICTIONS_SETTINGS, ...defaults, ...customSettings };
+  return {
+    memberSettings: {
+      allowCreateUpdateChannels: Boolean(s.allowCreateUpdateChannels),
+      allowCreatePrivateChannels: Boolean(s.allowCreatePrivateChannels && s.allowCreateUpdateChannels),
+      allowDeleteChannels: Boolean(s.allowDeleteChannels),
+      allowAddRemoveApps: Boolean(s.allowAddRemoveApps),
+      allowCreateUpdateRemoveTabs: Boolean(s.allowCreateUpdateRemoveTabs),
+      allowCreateUpdateRemoveConnectors: Boolean(s.allowCreateUpdateRemoveConnectors),
+    },
+    messagingSettings: {
+      allowOwnerDeleteMessages: Boolean(s.allowOwnerDeleteMessages),
+      allowUserDeleteMessages: Boolean(s.allowUserDeleteMessages),
+      allowUserEditMessages: Boolean(s.allowUserEditMessages),
+      allowTeamMentions: true,
+      allowChannelMentions: true,
+    },
+    funSettings: {
+      allowGiphy: false,
+      allowStickersAndMemes: false,
+      allowCustomMemes: false,
+    },
+  };
+}
 
 // Core provision helper for single team
 async function provisionAndConfigureTeam(team: TeamItem, token: string) {
@@ -1486,7 +1498,11 @@ async function provisionAndConfigureTeam(team: TeamItem, token: string) {
     }
   }
 
-  // 4. Teamify with EXACT STRICT PEDAGOGICAL RESTRICTIONS
+  // 4. Teamify with restrictions (active default or custom for this team)
+  const appliedRestrictions = { ...DEFAULT_RESTRICTIONS_SETTINGS, ...(db.config.defaultTeamSettings || {}), ...(team.memberRestrictions || {}) };
+  team.memberRestrictions = appliedRestrictions;
+  const graphRestrictionsPayload = formatGraphSettingsPayload(appliedRestrictions);
+
   let teamWebUrl = '';
   for (let attempt = 1; attempt <= 4; attempt++) {
     try {
@@ -1501,7 +1517,7 @@ async function provisionAndConfigureTeam(team: TeamItem, token: string) {
         await fetch(`https://graph.microsoft.com/v1.0/teams/${groupId}`, {
           method: 'PATCH',
           headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
-          body: JSON.stringify(STRICT_PEDAGOGICAL_RESTRICTIONS),
+          body: JSON.stringify(graphRestrictionsPayload),
         });
         break;
       }
@@ -1509,7 +1525,7 @@ async function provisionAndConfigureTeam(team: TeamItem, token: string) {
       const putTeamRes = await fetch(`https://graph.microsoft.com/v1.0/groups/${groupId}/team`, {
         method: 'PUT',
         headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
-        body: JSON.stringify(STRICT_PEDAGOGICAL_RESTRICTIONS),
+        body: JSON.stringify(graphRestrictionsPayload),
       });
 
       if (putTeamRes.status === 201 || putTeamRes.status === 200) {
@@ -1670,57 +1686,125 @@ app.post('/api/teams/provision-batch', async (req: Request, res: Response) => {
   }
 });
 
-// 5f. Enforce Restrictions on Teams (Appliquer les restrictions de la capture d'écran)
+// 5f-1. Get current default restrictions settings
+app.get('/api/teams/restrictions-settings', (req: Request, res: Response) => {
+  res.json({
+    defaultSettings: db.config.defaultTeamSettings || DEFAULT_RESTRICTIONS_SETTINGS,
+  });
+});
+
+// 5f-2. Enforce / Configure Restrictions on a specific team, all teams, and/or save as default
 app.post('/api/teams/enforce-restrictions', async (req: Request, res: Response) => {
-  const { teamId, all } = req.body;
+  const { teamId, all, saveAsDefault, settings } = req.body;
 
   try {
     const token = await fetchGraphToken();
-    let teamsToPatch: TeamItem[] = [];
+    const activeSettings = {
+      ...DEFAULT_RESTRICTIONS_SETTINGS,
+      ...(db.config.defaultTeamSettings || {}),
+      ...(settings || {})
+    };
 
-    if (teamId) {
-      const t = db.teams.find((item: TeamItem) => item.id === teamId || item.m365TeamId === teamId);
-      if (t && t.m365TeamId) teamsToPatch.push(t);
-    } else if (all) {
-      teamsToPatch = db.teams.filter((item: TeamItem) => Boolean(item.m365TeamId));
+    if (saveAsDefault) {
+      db.config.defaultTeamSettings = { ...activeSettings };
     }
 
-    let successCount = 0;
-    for (const team of teamsToPatch) {
-      if (!team.m365TeamId) continue;
-      try {
-        const patchRes = await fetch(`https://graph.microsoft.com/v1.0/teams/${team.m365TeamId}`, {
+    const graphPayload = formatGraphSettingsPayload(activeSettings);
+
+    // Apply to a specific team
+    if (teamId) {
+      const targetTeam = db.teams.find((t: TeamItem) => t.id === teamId || t.m365TeamId === teamId);
+      if (!targetTeam) return res.status(404).json({ success: false, error: 'Équipe introuvable' });
+
+      targetTeam.memberRestrictions = activeSettings;
+      let m365Patched = false;
+
+      if (targetTeam.m365TeamId && !targetTeam.m365TeamId.startsWith('m365-demo')) {
+        const patchRes = await fetch(`https://graph.microsoft.com/v1.0/teams/${targetTeam.m365TeamId}`, {
           method: 'PATCH',
           headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
-          body: JSON.stringify(STRICT_PEDAGOGICAL_RESTRICTIONS),
+          body: JSON.stringify(graphPayload),
         });
         if (patchRes.ok || patchRes.status === 204) {
-          successCount++;
+          m365Patched = true;
         }
-        await new Promise(r => setTimeout(r, 400));
-      } catch (e) {
-        // continue
       }
+
+      db.logs.unshift({
+        id: 'log-' + Date.now(),
+        timestamp: new Date().toISOString().replace('T', ' ').substring(0, 19),
+        action: 'SÉCURISATION_EQUIPE',
+        target: targetTeam.name,
+        details: `Autorisations membres personnalisées appliquées sur "${targetTeam.name}"${m365Patched ? ' (synchronisé en direct sur Microsoft Teams)' : ''}.${saveAsDefault ? ' Enregistré comme modèle par défaut pour les futures équipes.' : ''}`,
+        status: 'Réussi',
+        source: 'Admin',
+      });
+      saveDatabase(db);
+
+      return res.json({
+        success: true,
+        message: `Paramètres appliqués avec succès à l'équipe "${targetTeam.name}"${m365Patched ? ' (et synchronisés sur Teams Cloud)' : ''} !`,
+        count: 1,
+        team: targetTeam,
+        savedAsDefault: Boolean(saveAsDefault),
+      });
     }
 
-    db.logs.unshift({
-      id: 'log-' + Date.now(),
-      timestamp: new Date().toISOString().replace('T', ' ').substring(0, 19),
-      action: 'SÉCURISATION',
-      target: all ? 'Toutes les équipes' : (teamsToPatch[0]?.name || 'Équipe'),
-      details: `Restrictions membres strictes appliquées sur ${successCount} équipe(s) Microsoft Teams.`,
-      status: 'Réussi',
-      source: 'Admin',
-    });
-    saveDatabase(db);
+    // Apply to ALL teams
+    if (all) {
+      let successCount = 0;
+      for (const team of db.teams) {
+        team.memberRestrictions = activeSettings;
+        if (team.m365TeamId && !team.m365TeamId.startsWith('m365-demo')) {
+          try {
+            const patchRes = await fetch(`https://graph.microsoft.com/v1.0/teams/${team.m365TeamId}`, {
+              method: 'PATCH',
+              headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
+              body: JSON.stringify(graphPayload),
+            });
+            if (patchRes.ok || patchRes.status === 204) {
+              successCount++;
+            }
+            await new Promise(r => setTimeout(r, 150));
+          } catch (e) {
+            // continue
+          }
+        }
+      }
 
-    res.json({
-      success: true,
-      message: `Restrictions membres appliquées avec succès sur ${successCount} équipe(s) !`,
-      count: successCount,
-    });
+      db.logs.unshift({
+        id: 'log-' + Date.now(),
+        timestamp: new Date().toISOString().replace('T', ' ').substring(0, 19),
+        action: 'SÉCURISATION_GLOBALE',
+        target: 'Toutes les équipes',
+        details: `Autorisations membres appliquées sur ${db.teams.length} équipes (${successCount} mises à jour sur Microsoft Teams Cloud).${saveAsDefault ? ' Enregistré comme modèle par défaut pour les futures équipes.' : ''}`,
+        status: 'Réussi',
+        source: 'Admin',
+      });
+      saveDatabase(db);
+
+      return res.json({
+        success: true,
+        message: `Paramètres appliqués sur ${db.teams.length} équipes (${successCount} synchronisées en direct sur Teams Cloud) !`,
+        count: successCount,
+        savedAsDefault: Boolean(saveAsDefault),
+      });
+    }
+
+    // If only saving as default without updating existing teams
+    if (saveAsDefault) {
+      saveDatabase(db);
+      return res.json({
+        success: true,
+        message: 'Modèle par défaut enregistré pour toutes les nouvelles équipes créées !',
+        count: 0,
+        savedAsDefault: true,
+      });
+    }
+
+    res.json({ success: true, message: 'Aucune modification apportée' });
   } catch (err: any) {
-    res.status(500).json({ success: false, error: err.message || 'Erreur application des restrictions' });
+    res.status(500).json({ success: false, error: err.message || 'Erreur application des autorisations' });
   }
 });
 

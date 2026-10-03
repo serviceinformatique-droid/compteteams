@@ -13,6 +13,7 @@ import type {
   LogItem,
   AnomalyItem,
   DiagnosticStep,
+  MemberRestrictionsSettings,
 } from '../types/index.ts';
 
 const headers = {
@@ -276,10 +277,17 @@ export const api = {
     return res.json();
   },
 
-  async enforceTeamRestrictions(params: { teamId?: string; all?: boolean }): Promise<{
+  async enforceTeamRestrictions(params: {
+    teamId?: string;
+    all?: boolean;
+    saveAsDefault?: boolean;
+    settings?: Partial<MemberRestrictionsSettings>;
+  }): Promise<{
     success: boolean;
     message: string;
     count?: number;
+    team?: TeamItem;
+    savedAsDefault?: boolean;
     error?: string;
   }> {
     const res = await fetch('/api/teams/enforce-restrictions', {
@@ -287,6 +295,13 @@ export const api = {
       headers,
       body: JSON.stringify(params),
     });
+    return res.json();
+  },
+
+  async getRestrictionsSettings(): Promise<{
+    defaultSettings: MemberRestrictionsSettings;
+  }> {
+    const res = await fetch('/api/teams/restrictions-settings', { headers });
     return res.json();
   },
 

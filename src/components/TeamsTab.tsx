@@ -32,7 +32,7 @@ import {
   Edit3,
   AlertTriangle
 } from 'lucide-react';
-import type { TeamItem, ClassItem, UserItem } from '../types/index.ts';
+import type { TeamItem, ClassItem, UserItem, MemberRestrictionsSettings } from '../types/index.ts';
 import { api } from '../services/api.ts';
 
 interface TeamsTabProps {
@@ -172,13 +172,82 @@ export const TeamsTab: React.FC<TeamsTabProps> = ({
     onGenerateCatalog(); // refresh data
   };
 
-  const handleApplyRestrictionsAll = async () => {
+  // Security Restrictions Modal State (Configurable for single or all teams, with default saving)
+  const [restrictionsScope, setRestrictionsScope] = useState<'single' | 'all'>('all');
+  const [targetTeamIdForRestrictions, setTargetTeamIdForRestrictions] = useState<string>('');
+  const [saveAsDefaultOption, setSaveAsDefaultOption] = useState<boolean>(true);
+  const [customRestrictions, setCustomRestrictions] = useState<MemberRestrictionsSettings>({
+    allowCreateUpdateChannels: false,
+    allowCreatePrivateChannels: false,
+    allowDeleteChannels: false,
+    allowAddRemoveApps: false,
+    allowCustomApps: false,
+    allowCreateUpdateRemoveTabs: false,
+    allowOwnerDeleteMessages: true,
+    allowCreateUpdateRemoveConnectors: false,
+    allowUserCreateUpdateTags: true,
+    allowUserDeleteMessages: true,
+    allowUserEditMessages: true,
+  });
+
+  const handleOpenRestrictionsModal = (targetTeam?: TeamItem) => {
+    if (targetTeam) {
+      setRestrictionsScope('single');
+      setTargetTeamIdForRestrictions(targetTeam.id);
+      if (targetTeam.memberRestrictions) {
+        setCustomRestrictions({ ...targetTeam.memberRestrictions });
+      }
+    } else {
+      setRestrictionsScope('all');
+      if (filteredTeams.length > 0 && !targetTeamIdForRestrictions) {
+        setTargetTeamIdForRestrictions(filteredTeams[0].id);
+      }
+    }
+    setEnforceResult(null);
+    setIsRestrictionsModalOpen(true);
+  };
+
+  const handleToggleRestriction = (key: keyof MemberRestrictionsSettings) => {
+    setCustomRestrictions(prev => {
+      const next = { ...prev, [key]: !prev[key] };
+      // MS Graph dependency: allowCreatePrivateChannels requires allowCreateUpdateChannels to be true
+      if (key === 'allowCreateUpdateChannels' && !next.allowCreateUpdateChannels) {
+        next.allowCreatePrivateChannels = false;
+      }
+      return next;
+    });
+  };
+
+  const handleResetToStrictPreset = () => {
+    setCustomRestrictions({
+      allowCreateUpdateChannels: false,
+      allowCreatePrivateChannels: false,
+      allowDeleteChannels: false,
+      allowAddRemoveApps: false,
+      allowCustomApps: false,
+      allowCreateUpdateRemoveTabs: false,
+      allowOwnerDeleteMessages: true,
+      allowCreateUpdateRemoveConnectors: false,
+      allowUserCreateUpdateTags: true,
+      allowUserDeleteMessages: true,
+      allowUserEditMessages: true,
+    });
+  };
+
+  const handleApplyRestrictions = async () => {
     setIsEnforcingRestrictions(true);
     setEnforceResult(null);
     try {
-      const res = await api.enforceTeamRestrictions({ all: true });
+      const res = await api.enforceTeamRestrictions({
+        teamId: restrictionsScope === 'single' ? targetTeamIdForRestrictions : undefined,
+        all: restrictionsScope === 'all',
+        saveAsDefault: saveAsDefaultOption,
+        settings: customRestrictions,
+      });
+
       if (res.success) {
-        setEnforceResult(`Restrictions appliquées avec succès sur ${res.count || 0} équipes Microsoft Teams !`);
+        setEnforceResult(res.message);
+        onGenerateCatalog();
       } else {
         setEnforceResult(`Erreur: ${res.error}`);
       }
@@ -408,12 +477,12 @@ export const TeamsTab: React.FC<TeamsTabProps> = ({
           </button>
 
           <button
-            onClick={() => setIsRestrictionsModalOpen(true)}
+            onClick={() => handleOpenRestrictionsModal()}
             className="px-3.5 py-2 rounded-xl bg-gradient-to-r from-purple-700 to-indigo-700 hover:from-purple-600 hover:to-indigo-600 text-white text-xs font-semibold flex items-center gap-1.5 shadow-md shadow-purple-600/20 transition active:scale-95 border border-purple-500/30"
-            title="Appliquer les restrictions strictes sur les membres des équipes (interdire création de canaux/apps, etc.)"
+            title="Choisir et appliquer les autorisations / restrictions membres (pour une ou toutes les équipes, et par défaut)"
           >
             <ShieldCheck className="w-4 h-4 text-purple-200" />
-            Restrictions membres
+            Autorisations membres
           </button>
 
           <button
@@ -725,6 +794,14 @@ export const TeamsTab: React.FC<TeamsTabProps> = ({
                   title="Modifier cette équipe"
                 >
                   <Edit3 className="w-3.5 h-3.5" />
+                </button>
+
+                <button
+                  onClick={() => handleOpenRestrictionsModal(t)}
+                  className="p-1.5 rounded-lg bg-slate-700 hover:bg-purple-600 text-slate-300 hover:text-white transition"
+                  title="Gérer les autorisations / restrictions de cette équipe"
+                >
+                  <ShieldCheck className="w-3.5 h-3.5" />
                 </button>
 
                 <button
@@ -1326,18 +1403,18 @@ export const TeamsTab: React.FC<TeamsTabProps> = ({
         </div>
       )}
 
-      {/* Modal Restrictions Membres */}
+      {/* Modal Autorisations des Membres & Restrictions Teams */}
       {isRestrictionsModalOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-sm">
-          <div className="bg-slate-900 border border-slate-700 rounded-2xl w-full max-w-lg shadow-2xl p-5 sm:p-6 space-y-4 max-h-[90vh] overflow-y-auto">
+          <div className="bg-slate-900 border border-slate-700 rounded-2xl w-full max-w-xl shadow-2xl p-5 sm:p-6 space-y-4 max-h-[90vh] overflow-y-auto">
             <div className="flex items-start justify-between">
               <div className="flex items-center gap-2.5">
-                <div className="w-10 h-10 rounded-xl bg-purple-500/20 text-purple-400 flex items-center justify-center">
+                <div className="w-10 h-10 rounded-xl bg-purple-500/20 text-purple-400 flex items-center justify-center shrink-0">
                   <ShieldCheck className="w-5 h-5" />
                 </div>
                 <div>
-                  <h3 className="text-base font-bold text-white">Autorisations des membres (Restrictions Teams)</h3>
-                  <p className="text-xs text-slate-400">Paramétrage strict conforme au cahier des charges pédagogique</p>
+                  <h3 className="text-base font-bold text-white">Autorisations des membres (Paramètres Teams)</h3>
+                  <p className="text-xs text-slate-400">Activer la création de canal, l'ajout d'applications et plus encore</p>
                 </div>
               </div>
               <button
@@ -1348,70 +1425,216 @@ export const TeamsTab: React.FC<TeamsTabProps> = ({
               </button>
             </div>
 
-            <p className="text-xs text-slate-300">
-              Ces restrictions sont automatiquement injectées dans chaque équipe lors de sa création. Vous pouvez également les ré-appliquer sur l'ensemble des équipes déjà existantes :
-            </p>
-
-            {/* Checklist exactly matching user screenshot */}
-            <div className="bg-slate-950 border border-slate-800 rounded-xl p-4 space-y-2.5 text-xs text-slate-300">
-              <div className="text-[11px] font-bold uppercase tracking-wider text-slate-400 pb-1 border-b border-slate-800">
-                Autorisations des membres
+            {/* Scope Selection: une équipe OU toutes les équipes */}
+            <div className="bg-slate-950/80 border border-slate-800 rounded-xl p-3.5 space-y-2.5 text-xs">
+              <label className="font-semibold text-white block">Périmètre d'application :</label>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                <label className="flex items-center gap-2 p-2.5 rounded-lg bg-slate-900 border border-slate-700 cursor-pointer hover:border-slate-600">
+                  <input
+                    type="radio"
+                    name="restrictionsScope"
+                    value="single"
+                    checked={restrictionsScope === 'single'}
+                    onChange={() => setRestrictionsScope('single')}
+                    className="text-purple-600"
+                  />
+                  <span><strong>Une équipe spécifique</strong></span>
+                </label>
+                <label className="flex items-center gap-2 p-2.5 rounded-lg bg-slate-900 border border-slate-700 cursor-pointer hover:border-slate-600">
+                  <input
+                    type="radio"
+                    name="restrictionsScope"
+                    value="all"
+                    checked={restrictionsScope === 'all'}
+                    onChange={() => setRestrictionsScope('all')}
+                    className="text-purple-600"
+                  />
+                  <span><strong>Toutes les équipes ({teams.length})</strong></span>
+                </label>
               </div>
 
-              <div className="flex items-center gap-2.5 opacity-60">
-                <Square className="w-4 h-4 text-slate-500 shrink-0" />
-                <span>Autoriser les membres à créer et mettre à jour des canaux (Désactivé)</span>
+              {restrictionsScope === 'single' && (
+                <div className="pt-1">
+                  <label className="text-[11px] text-slate-400 block mb-1">Choisir l'équipe cible :</label>
+                  <select
+                    value={targetTeamIdForRestrictions}
+                    onChange={(e) => {
+                      setTargetTeamIdForRestrictions(e.target.value);
+                      const t = teams.find(item => item.id === e.target.value);
+                      if (t?.memberRestrictions) {
+                        setCustomRestrictions({ ...t.memberRestrictions });
+                      }
+                    }}
+                    className="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-1.5 text-xs text-white focus:outline-none focus:border-purple-500"
+                  >
+                    {teams.map(t => (
+                      <option key={t.id} value={t.id}>
+                        {t.name} ({t.classCode}) {t.m365TeamId ? '• Sur M365 Cloud' : '• Local'}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              )}
+
+              {/* Checkbox: Appliquer sur toutes les NOUVELLES équipes */}
+              <div className="pt-2 border-t border-slate-800 flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+                <label className="flex items-center gap-2 cursor-pointer text-slate-300">
+                  <input
+                    type="checkbox"
+                    checked={saveAsDefaultOption}
+                    onChange={(e) => setSaveAsDefaultOption(e.target.checked)}
+                    className="rounded text-purple-600 focus:ring-0 bg-slate-900 border-slate-700"
+                  />
+                  <span>
+                    <strong>Appliquer par défaut sur TOUTES les NOUVELLES équipes</strong>
+                  </span>
+                </label>
+
+                <button
+                  type="button"
+                  onClick={handleResetToStrictPreset}
+                  className="text-[11px] text-purple-400 hover:text-purple-300 underline font-medium self-start sm:self-auto"
+                >
+                  Profil strict recommandé
+                </button>
+              </div>
+            </div>
+
+            {/* Checklist exactly matching user screenshot with interactive checkboxes */}
+            <div className="bg-slate-950 border border-slate-800 rounded-xl p-4 space-y-2.5 text-xs text-slate-200">
+              <div className="text-[11px] font-bold uppercase tracking-wider text-slate-400 pb-1.5 border-b border-slate-800 flex items-center justify-between">
+                <span>Autorisations des membres</span>
+                <span className="text-[10px] lowercase text-slate-500 font-normal">Cochez pour autoriser</span>
               </div>
 
-              <div className="flex items-center gap-2.5 opacity-60 pl-6">
-                <Square className="w-4 h-4 text-slate-600 shrink-0" />
-                <span className="text-slate-400">Autoriser les membres à créer des canaux privés (Désactivé)</span>
+              {/* 1. allowCreateUpdateChannels */}
+              <label className="flex items-center gap-2.5 cursor-pointer hover:text-white transition">
+                <input
+                  type="checkbox"
+                  checked={customRestrictions.allowCreateUpdateChannels}
+                  onChange={() => handleToggleRestriction('allowCreateUpdateChannels')}
+                  className="rounded text-purple-600 focus:ring-0 bg-slate-900 border-slate-700"
+                />
+                <span>Autoriser les membres à créer et mettre à jour des canaux</span>
+              </label>
+
+              {/* 2. allowCreatePrivateChannels (indented) */}
+              <div className="pl-6">
+                <label className={`flex items-center gap-2.5 transition ${
+                  customRestrictions.allowCreateUpdateChannels ? 'cursor-pointer hover:text-white' : 'opacity-40 cursor-not-allowed'
+                }`}>
+                  <input
+                    type="checkbox"
+                    disabled={!customRestrictions.allowCreateUpdateChannels}
+                    checked={customRestrictions.allowCreatePrivateChannels && customRestrictions.allowCreateUpdateChannels}
+                    onChange={() => handleToggleRestriction('allowCreatePrivateChannels')}
+                    className="rounded text-purple-600 focus:ring-0 bg-slate-900 border-slate-700"
+                  />
+                  <span>Autoriser les membres à créer des canaux privés</span>
+                </label>
+                <div className="text-[11px] text-slate-500 italic mt-0.5">
+                  Les autorisations de création des canaux privés nécessitent également l'activation de la création des canaux.
+                </div>
               </div>
 
-              <div className="flex items-center gap-2.5 opacity-60">
-                <Square className="w-4 h-4 text-slate-500 shrink-0" />
-                <span>Autoriser les membres à supprimer et restaurer des canaux (Désactivé)</span>
-              </div>
+              {/* 3. allowDeleteChannels */}
+              <label className="flex items-center gap-2.5 cursor-pointer hover:text-white transition">
+                <input
+                  type="checkbox"
+                  checked={customRestrictions.allowDeleteChannels}
+                  onChange={() => handleToggleRestriction('allowDeleteChannels')}
+                  className="rounded text-purple-600 focus:ring-0 bg-slate-900 border-slate-700"
+                />
+                <span>Autoriser les membres à supprimer et restaurer des canaux</span>
+              </label>
 
-              <div className="flex items-center gap-2.5 opacity-60">
-                <Square className="w-4 h-4 text-slate-500 shrink-0" />
-                <span>Autoriser les membres à ajouter et supprimer des applications (Désactivé)</span>
-              </div>
+              {/* 4. allowAddRemoveApps */}
+              <label className="flex items-center gap-2.5 cursor-pointer hover:text-white transition">
+                <input
+                  type="checkbox"
+                  checked={customRestrictions.allowAddRemoveApps}
+                  onChange={() => handleToggleRestriction('allowAddRemoveApps')}
+                  className="rounded text-purple-600 focus:ring-0 bg-slate-900 border-slate-700"
+                />
+                <span>Autoriser les membres à ajouter et supprimer des applications</span>
+              </label>
 
-              <div className="flex items-center gap-2.5 opacity-60">
-                <Square className="w-4 h-4 text-slate-500 shrink-0" />
-                <span>Autoriser les membres à charger des applications personnalisées (Désactivé)</span>
-              </div>
+              {/* 5. allowCustomApps */}
+              <label className="flex items-center gap-2.5 cursor-pointer hover:text-white transition">
+                <input
+                  type="checkbox"
+                  checked={customRestrictions.allowCustomApps}
+                  onChange={() => handleToggleRestriction('allowCustomApps')}
+                  className="rounded text-purple-600 focus:ring-0 bg-slate-900 border-slate-700"
+                />
+                <span>Autoriser les membres à charger des applications personnalisées</span>
+              </label>
 
-              <div className="flex items-center gap-2.5 opacity-60">
-                <Square className="w-4 h-4 text-slate-500 shrink-0" />
-                <span>Autoriser les membres à créer, mettre à jour et supprimer des onglets (Désactivé)</span>
-              </div>
+              {/* 6. allowCreateUpdateRemoveTabs */}
+              <label className="flex items-center gap-2.5 cursor-pointer hover:text-white transition">
+                <input
+                  type="checkbox"
+                  checked={customRestrictions.allowCreateUpdateRemoveTabs}
+                  onChange={() => handleToggleRestriction('allowCreateUpdateRemoveTabs')}
+                  className="rounded text-purple-600 focus:ring-0 bg-slate-900 border-slate-700"
+                />
+                <span>Autoriser les membres à créer, mettre à jour et supprimer des onglets</span>
+              </label>
 
-              <div className="flex items-center gap-2.5 text-emerald-400 font-medium">
-                <CheckSquare className="w-4 h-4 text-emerald-400 shrink-0" />
-                <span>Les propriétaires peuvent supprimer tous les messages (Activé)</span>
-              </div>
+              {/* 7. allowOwnerDeleteMessages */}
+              <label className="flex items-center gap-2.5 cursor-pointer text-emerald-400 font-semibold hover:text-emerald-300 transition">
+                <input
+                  type="checkbox"
+                  checked={customRestrictions.allowOwnerDeleteMessages}
+                  onChange={() => handleToggleRestriction('allowOwnerDeleteMessages')}
+                  className="rounded text-emerald-600 focus:ring-0 bg-slate-900 border-slate-700"
+                />
+                <span>Les propriétaires peuvent supprimer tous les messages</span>
+              </label>
 
-              <div className="flex items-center gap-2.5 opacity-60">
-                <Square className="w-4 h-4 text-slate-500 shrink-0" />
-                <span>Autoriser les membres à créer, mettre à jour et supprimer des connecteurs (Désactivé)</span>
-              </div>
+              {/* 8. allowCreateUpdateRemoveConnectors */}
+              <label className="flex items-center gap-2.5 cursor-pointer hover:text-white transition">
+                <input
+                  type="checkbox"
+                  checked={customRestrictions.allowCreateUpdateRemoveConnectors}
+                  onChange={() => handleToggleRestriction('allowCreateUpdateRemoveConnectors')}
+                  className="rounded text-purple-600 focus:ring-0 bg-slate-900 border-slate-700"
+                />
+                <span>Autoriser les membres à créer, mettre à jour et supprimer des connecteurs</span>
+              </label>
 
-              <div className="flex items-center gap-2.5 text-emerald-400 font-medium">
-                <CheckSquare className="w-4 h-4 text-emerald-400 shrink-0" />
-                <span>Autoriser les membres à créer, modifier et supprimer des balises (Activé)</span>
-              </div>
+              {/* 9. allowUserCreateUpdateTags */}
+              <label className="flex items-center gap-2.5 cursor-pointer hover:text-white transition">
+                <input
+                  type="checkbox"
+                  checked={customRestrictions.allowUserCreateUpdateTags}
+                  onChange={() => handleToggleRestriction('allowUserCreateUpdateTags')}
+                  className="rounded text-purple-600 focus:ring-0 bg-slate-900 border-slate-700"
+                />
+                <span>Autoriser les membres à créer, modifier et supprimer des balises</span>
+              </label>
 
-              <div className="flex items-center gap-2.5 text-emerald-400 font-medium">
-                <CheckSquare className="w-4 h-4 text-emerald-400 shrink-0" />
-                <span>Autoriser les membres à supprimer leurs messages (Activé)</span>
-              </div>
+              {/* 10. allowUserDeleteMessages */}
+              <label className="flex items-center gap-2.5 cursor-pointer hover:text-white transition">
+                <input
+                  type="checkbox"
+                  checked={customRestrictions.allowUserDeleteMessages}
+                  onChange={() => handleToggleRestriction('allowUserDeleteMessages')}
+                  className="rounded text-purple-600 focus:ring-0 bg-slate-900 border-slate-700"
+                />
+                <span>Autoriser les membres à supprimer leurs messages</span>
+              </label>
 
-              <div className="flex items-center gap-2.5 text-emerald-400 font-medium">
-                <CheckSquare className="w-4 h-4 text-emerald-400 shrink-0" />
-                <span>Autoriser les membres à modifier leurs messages (Activé)</span>
-              </div>
+              {/* 11. allowUserEditMessages */}
+              <label className="flex items-center gap-2.5 cursor-pointer hover:text-white transition">
+                <input
+                  type="checkbox"
+                  checked={customRestrictions.allowUserEditMessages}
+                  onChange={() => handleToggleRestriction('allowUserEditMessages')}
+                  className="rounded text-purple-600 focus:ring-0 bg-slate-900 border-slate-700"
+                />
+                <span>Autoriser les membres à modifier leurs messages</span>
+              </label>
             </div>
 
             {enforceResult && (
@@ -1428,7 +1651,7 @@ export const TeamsTab: React.FC<TeamsTabProps> = ({
                 Fermer
               </button>
               <button
-                onClick={handleApplyRestrictionsAll}
+                onClick={handleApplyRestrictions}
                 disabled={isEnforcingRestrictions}
                 className="px-5 py-2 rounded-xl bg-purple-600 hover:bg-purple-500 disabled:opacity-50 text-white text-xs font-bold flex items-center gap-2 shadow-lg shadow-purple-600/30 transition"
               >
@@ -1440,7 +1663,7 @@ export const TeamsTab: React.FC<TeamsTabProps> = ({
                 ) : (
                   <>
                     <ShieldCheck className="w-4 h-4" />
-                    Appliquer sur toutes les équipes Teams actives
+                    {restrictionsScope === 'single' ? 'Appliquer à cette équipe' : 'Appliquer à TOUTES les équipes'}
                   </>
                 )}
               </button>
