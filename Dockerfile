@@ -1,8 +1,9 @@
-# Dockerfile pour NDM Teams Manager
-# Ensemble Scolaire Notre-Dame des Missions
-FROM node:22-bullseye-slim
+FROM node:22-alpine AS builder
 
 WORKDIR /app
+
+# Install build dependencies
+RUN apk add --no-cache python3 make g++ git
 
 COPY package*.json ./
 RUN npm install
@@ -10,9 +11,29 @@ RUN npm install
 COPY . .
 RUN npm run build
 
-EXPOSE 3000
+# Production runtime stage
+FROM node:22-alpine AS runner
+
+WORKDIR /app
 
 ENV NODE_ENV=production
 ENV PORT=3000
 
-CMD ["npm", "start"]
+COPY package*.json ./
+RUN npm install --omit=dev
+
+COPY --from=builder /app/dist ./dist
+COPY --from=builder /app/server.ts ./
+COPY --from=builder /app/pedagogicalData.ts ./
+COPY --from=builder /app/src/types ./src/types
+COPY --from=builder /app/data ./data
+
+# Install tsx globally for lightweight TS execution
+RUN npm install -g tsx
+
+EXPOSE 3000
+
+HEALTHCHECK --interval=30s --timeout=5s --start-period=5s --retries=3 \
+  CMD wget --no-verbose --tries=1 --spider http://localhost:3000/api/config || exit 1
+
+CMD ["tsx", "server.ts"]

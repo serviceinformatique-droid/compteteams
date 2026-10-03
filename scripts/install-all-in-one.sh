@@ -58,7 +58,7 @@ fi
 
 echo -e "\n${BLUE}[4/5] Installation des dépendances du projet et compilation...${NC}"
 if [ -f "package.json" ]; then
-  npm install
+  npm install --legacy-peer-deps || npm install
   npm run build
 else
   echo -e "${YELLOW}[ATTENTION] Le fichier package.json n'est pas encore présent dans ${APP_DIR}.${NC}"
